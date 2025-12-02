@@ -71,12 +71,18 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
             <Pressable
               style={[styles.button, styles.cancelButton]}
               onPress={onCancel}
+              accessibilityRole="button"
+              accessibilityLabel={cancelText}
+              accessibilityHint="Cancels this action"
             >
               <Text style={styles.cancelButtonText}>{cancelText}</Text>
             </Pressable>
             <Pressable
               style={[styles.button, styles.confirmButton, { backgroundColor: color }]}
               onPress={onConfirm}
+              accessibilityRole="button"
+              accessibilityLabel={confirmText}
+              accessibilityHint="Confirms this action"
             >
               <Text style={styles.confirmButtonText}>{confirmText}</Text>
             </Pressable>

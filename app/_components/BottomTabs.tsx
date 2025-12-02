@@ -4,6 +4,7 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { Colors, Radii } from '../_styles/theme';
+import { navigateToHome, navigateToTaskForm, navigateToUpcoming } from '../_utils/navigationHelpers';
 
 export function BottomTabs() {
   const router = useRouter();
@@ -22,7 +23,14 @@ export function BottomTabs() {
       <Pressable
         key={tab.key}
         style={[styles.tabButton, isActive && styles.tabButtonActive]}
-        onPress={() => (router.push as any)(tab.route)}
+        onPress={() => {
+          if (tab.key === 'all') navigateToHome(router);
+          else if (tab.key === 'upcoming') navigateToUpcoming(router);
+          else if (tab.key === 'add') navigateToTaskForm(router);
+        }}
+        accessibilityRole="button"
+        accessibilityLabel={tab.label}
+        accessibilityHint={`Navigate to ${tab.label} screen`}
         onPressIn={() => { scale.value = 0.94; }}
         onPressOut={() => { scale.value = isActive ? 1.05 : 1; }}
       >

@@ -60,13 +60,13 @@ export async function getTaskById(id: string): Promise<Task | null> {
  */
 export async function deleteTask(id: string): Promise<void> {
   try {
-    console.log('storageUtils: deleteTask called for', id);
+    // Delete task from storage
     const tasks = await getAllTasks();
-    console.log('storageUtils: current tasks count:', tasks.length);
+    // Current tasks count
     const filtered = tasks.filter((t) => t.id !== id);
-    console.log('storageUtils: filtered tasks count:', filtered.length);
+    // Filtered tasks count
     await AsyncStorage.setItem(TASKS_KEY, JSON.stringify(filtered));
-    console.log('storageUtils: task deleted from AsyncStorage');
+    // Task deleted from AsyncStorage
   } catch (error) {
     console.error('Error deleting task:', error);
     throw error;

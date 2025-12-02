@@ -90,22 +90,22 @@ export function useTaskStorage() {
   const deleteTask = useCallback(
     async (taskId: string) => {
       try {
-        console.log('useTaskStorage: deleteTask called for', taskId);
+        // Delete task called
         // Get notification IDs and cancel them
         const notificationIds = await getNotificationSchedule(taskId);
-        console.log('useTaskStorage: found notificationIds:', notificationIds);
+        // Found notification IDs
         if (notificationIds.length > 0) {
           await cancelTaskNotifications(notificationIds);
         }
 
         // Delete from storage
-        console.log('useTaskStorage: calling storageDeleteTask');
+        // Calling storage delete
         await storageDeleteTask(taskId);
         await deleteNotificationSchedule(taskId);
 
         // Update local state using functional update to avoid stale closure
         setTasks((prevTasks) => prevTasks.filter((t) => t.id !== taskId));
-        console.log('useTaskStorage: task deleted successfully');
+        // Task deleted successfully
       } catch (error) {
         console.error('Error deleting task:', error);
         throw error;

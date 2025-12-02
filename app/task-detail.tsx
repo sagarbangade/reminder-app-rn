@@ -7,23 +7,24 @@ import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-    Alert,
     Pressable,
     ScrollView,
     StyleSheet,
     Text,
-    View,
+    View
 } from 'react-native';
  
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomTabs } from './_components/BottomTabs';
+import { ConfirmDialog } from './_components/ConfirmDialog';
 import { NotificationCalendar } from './_components/NotificationCalendar';
 import { useTaskStorage } from './_hooks/useTaskStorage';
 import { Colors, Radii } from './_styles/theme';
 import { Task } from './_types/Task';
+import { navigateToTaskForm } from './_utils/navigationHelpers';
 import { cancelTaskNotifications, schedulePersistentFollowupsForOccurrence } from './_utils/scheduleUtils';
 import { acknowledgeOccurrence, deletePersistentSchedule, getPersistentSchedule, isOccurrenceAcknowledged, unacknowledgeOccurrence } from './_utils/storageUtils';
-import { showToast } from './_utils/toastUtils';
+import { showErrorToast, showSuccessToast, showToast } from './_utils/toastUtils';
 
 /**
  * TaskDetailScreen displays full details of a task and allows editing/deletion
@@ -37,6 +38,7 @@ export default function TaskDetailScreen() {
   const [activeTab, setActiveTab] = useState<'details' | 'upcoming'>('details');
   const [upcoming, setUpcoming] = useState<{ date: Date; key: string; label: string }[]>([]);
   const [ackMap, setAckMap] = useState<Record<string, boolean>>({});
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   /**
    * Load task data
@@ -48,7 +50,7 @@ export default function TaskDetailScreen() {
         setTask(loadedTask);
       }
     } catch {
-      Alert.alert('Error', 'Failed to load task');
+      showErrorToast('Failed to load task');
     }
   }, [taskId, fetchTaskById]);
 
@@ -139,7 +141,7 @@ export default function TaskDetailScreen() {
         try {
           await schedulePersistentFollowupsForOccurrence(task, occKey);
         } catch (e) {
-          console.error('Failed to reschedule followups on unack', e);
+          showErrorToast('Failed to reschedule followups');
         }
         setAckMap((m) => ({ ...m, [occKey]: false }));
         try { await Haptics.selectionAsync(); } catch {}
@@ -157,7 +159,7 @@ export default function TaskDetailScreen() {
         showToast('success', 'Reminder acknowledged');
       }
     } catch (e) {
-      console.error('Failed acknowledge toggle', e);
+      showErrorToast('Failed to toggle acknowledgment');
     }
   };
 
@@ -166,20 +168,24 @@ export default function TaskDetailScreen() {
    */
   const handleDelete = async () => {
     if (!task) {
-      Alert.alert('Error', 'No task to delete');
+      showErrorToast('No task to delete');
       return;
     }
     
-    const confirmed = window.confirm(`Are you sure you want to delete "${task.title}"?`);
-    if (!confirmed) return;
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    setShowDeleteConfirm(false);
+    if (!task) return;
 
     try {
       await deleteTask(task.id);
       try { await Haptics.selectionAsync(); } catch {}
-      showToast('success', 'Task deleted');
+      showSuccessToast('Task deleted successfully');
       router.back();
     } catch (e) {
-      Alert.alert('Error', `Failed to delete task: ${e instanceof Error ? e.message : 'Unknown error'}`);
+      showErrorToast(`Failed to delete task: ${e instanceof Error ? e.message : 'Unknown error'}`);
     }
   };
 
@@ -189,7 +195,7 @@ export default function TaskDetailScreen() {
   const handleEdit = () => {
     if (task?.id) {
       // Use any to bypass type checking for dynamic routes
-      (router.push as any)(`/task-form?taskId=${task.id}`);
+      navigateToTaskForm(router, task.id);
     }
   };
 
@@ -223,7 +229,7 @@ export default function TaskDetailScreen() {
     <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} style={styles.goBackBtn}>
-          <MaterialCommunityIcons name="arrow-left" size={24} color="#7C3AED" />
+          <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
         </Pressable>
         <Text style={styles.headerTitle}>Task Details</Text>
         <View style={{ width: 24 }} />
@@ -297,9 +303,9 @@ export default function TaskDetailScreen() {
                   </View>
                   <Pressable onPress={() => handleAcknowledge(it.key)} style={styles.ackButton}>
                     {ackMap[it.key] ? (
-                      <MaterialCommunityIcons name="check-circle" size={28} color="#34C759" />
+                      <MaterialCommunityIcons name="check-circle" size={28} color={Colors.success} />
                     ) : (
-                      <MaterialCommunityIcons name="checkbox-blank-circle-outline" size={28} color="#999" />
+                      <MaterialCommunityIcons name="checkbox-blank-circle-outline" size={28} color={Colors.textMuted} />
                     )}
                   </Pressable>
                 </View>
@@ -330,6 +336,17 @@ export default function TaskDetailScreen() {
         </View>
       </ScrollView>
       <BottomTabs />
+      
+      <ConfirmDialog
+        visible={showDeleteConfirm}
+        title="Delete Task"
+        message={`Are you sure you want to delete "${task?.title}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        onConfirm={confirmDelete}
+        onCancel={() => setShowDeleteConfirm(false)}
+        type="danger"
+      />
     </View>
   );
 }

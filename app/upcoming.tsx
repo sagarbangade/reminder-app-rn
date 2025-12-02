@@ -158,9 +158,9 @@ export default function UpcomingScreen() {
                     <Text style={styles.occLabel}>{occ.label}</Text>
                     <Pressable onPress={() => handleToggleAck(occ.task, occ.key, occ.acknowledged)} style={styles.ackButton}>
                       {occ.acknowledged ? (
-                        <MaterialCommunityIcons name="check-circle" size={28} color="#34C759" />
+                        <MaterialCommunityIcons name="check-circle" size={28} color={Colors.success} />
                       ) : (
-                        <MaterialCommunityIcons name="checkbox-blank-circle-outline" size={28} color="#999" />
+                        <MaterialCommunityIcons name="checkbox-blank-circle-outline" size={28} color={Colors.textMuted} />
                       )}
                     </Pressable>
                   </View>

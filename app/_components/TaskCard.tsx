@@ -63,6 +63,9 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onPress, onEdit, onDel
         onPressOut={() => { scale.value = 1; }}
         onPress={onPress}
         style={styles.pressable}
+        accessibilityRole="button"
+        accessibilityLabel={`View ${task.title} reminder`}
+        accessibilityHint="Opens detailed view of this reminder"
       >
         <View style={styles.cardHeader}>
           <View style={styles.avatar}>
@@ -94,18 +97,27 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onPress, onEdit, onDel
         <Pressable
           style={[styles.actionIcon, styles.infoButton]}
           onPress={onPress}
+          accessibilityRole="button"
+          accessibilityLabel="View details"
+          accessibilityHint="Opens detailed view"
         >
           <MaterialCommunityIcons name="eye" size={18} color="#FFF" />
         </Pressable>
         <Pressable
           style={[styles.actionIcon, styles.editButton]}
           onPress={onEdit ? onEdit : onPress}
+          accessibilityRole="button"
+          accessibilityLabel="Edit reminder"
+          accessibilityHint="Opens form to edit this reminder"
         >
           <MaterialCommunityIcons name="pencil" size={18} color="#FFF" />
         </Pressable>
         <Pressable
           style={[styles.actionIcon, styles.deleteButton]}
           onPress={handleDelete}
+          accessibilityRole="button"
+          accessibilityLabel="Delete reminder"
+          accessibilityHint="Deletes this reminder permanently"
         >
           <MaterialCommunityIcons name="delete" size={18} color="#FFF" />
         </Pressable>

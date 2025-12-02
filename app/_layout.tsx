@@ -3,6 +3,7 @@ import { Stack } from 'expo-router';
 import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
 import Toast from 'react-native-toast-message';
+import { ErrorBoundary } from './_components/ErrorBoundary';
 import { Colors, Radii } from './_styles/theme';
 
 const AnimatedView = Animated.View;
@@ -55,7 +56,7 @@ const toastConfig: any = {
 
 export default function RootLayout() {
   return (
-    <>
+    <ErrorBoundary>
       <Stack
         screenOptions={{
           headerShown: false,
@@ -69,7 +70,7 @@ export default function RootLayout() {
         <Stack.Screen name="task-detail" />
       </Stack>
       <Toast config={toastConfig} />
-    </>
+    </ErrorBoundary>
   );
 }
 

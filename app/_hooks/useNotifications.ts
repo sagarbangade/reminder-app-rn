@@ -27,7 +27,7 @@ export function useNotifications(onNotificationReceived?: (notification: Notific
 
     // Listen for notifications when app is in foreground
     notificationListener.current = Notifications.addNotificationReceivedListener((notification) => {
-      console.log('Notification received:', notification);
+      // Notification received
       if (onNotificationReceived) {
         onNotificationReceived(notification);
       }
@@ -35,7 +35,7 @@ export function useNotifications(onNotificationReceived?: (notification: Notific
 
     // Listen for notification responses (user interaction)
     responseListener.current = Notifications.addNotificationResponseReceivedListener((response) => {
-      console.log('Notification response:', response);
+      // Notification response received
     });
 
     // Cleanup

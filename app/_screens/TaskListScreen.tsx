@@ -6,7 +6,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import {
     FlatList,
     Pressable,
@@ -19,6 +19,7 @@ import { BottomTabs } from '../_components/BottomTabs';
 import { TaskCard } from '../_components/TaskCard';
 import { useTaskStorage } from '../_hooks/useTaskStorage';
 import { Colors, Radii } from '../_styles/theme';
+import { navigateToTaskDetail, navigateToTaskForm } from '../_utils/navigationHelpers';
 import { getUpcomingCountForTask } from '../_utils/scheduleUtils';
 import { showErrorToast, showToast } from '../_utils/toastUtils';
 
@@ -28,16 +29,18 @@ import { showErrorToast, showToast } from '../_utils/toastUtils';
 export const TaskListScreen: React.FC = () => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { tasks, loading, deleteTask, loadTasks } = useTaskStorage();  // Reload tasks when screen is focused (after adding/editing)
-  const [counts, setCounts] = React.useState<Record<string, number>>({});
+  const { tasks, loading, deleteTask, loadTasks } = useTaskStorage();
+  
+  // Reload tasks when screen is focused
   useFocusEffect(
     useCallback(() => {
       loadTasks();
     }, [loadTasks])
   );
 
-  useEffect(() => {
-    if (!tasks) return;
+  // Optimize counts calculation with useMemo
+  const counts = useMemo(() => {
+    if (!tasks) return {};
     const map: Record<string, number> = {};
     for (const t of tasks) {
       try {
@@ -46,7 +49,7 @@ export const TaskListScreen: React.FC = () => {
         map[t.id] = 0;
       }
     }
-    setCounts(map);
+    return map;
   }, [tasks]);
 
   /**
@@ -68,20 +71,20 @@ export const TaskListScreen: React.FC = () => {
    * Navigate to edit screen
    */
   const handleEditTask = (taskId: string) => {
-    (router.push as any)(`/task-form?taskId=${taskId}`);
+    navigateToTaskForm(router, taskId);
     try { Haptics.selectionAsync(); } catch {}
     showToast('info', 'Opening editor...');
   };
 
   const handleOpenDetail = (taskId: string) => {
-    (router.push as any)(`/task-detail?taskId=${taskId}`);
+    navigateToTaskDetail(router, taskId);
   };
 
   /**
    * Navigate to add new task screen
    */
   const handleAddTask = () => {
-    (router.push as any)(`/task-form`);
+    navigateToTaskForm(router);
   };
 
   // handleOpenUpcoming removed — bottom tabs handle navigation now
@@ -135,6 +138,17 @@ export const TaskListScreen: React.FC = () => {
           scrollEnabled
         />
       )}
+      <Pressable
+          style={styles.floatingButtonContainer}
+          onPress={handleAddTask}
+          accessibilityRole="button"
+          accessibilityLabel="Add new task"
+          accessibilityHint="Opens the form to create a new reminder"
+        >
+          <View style={styles.floatingButton}>
+            <MaterialCommunityIcons name="plus" size={24} color="#FFF" />
+          </View>
+        </Pressable>
 
       {/* Persistent bottom tabs */}
       <BottomTabs />
