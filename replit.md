@@ -30,12 +30,15 @@ A smart reminder application that helps users stay on track with medication sche
 
 ## Recent Changes
 
-### December 2, 2025 - Delete Functionality Fix (FINAL)
+### December 2, 2025 - Delete Functionality Fix (COMPLETE)
 - **Root Cause**: React Native's `Alert.alert()` component doesn't properly handle button callbacks on web platforms
-- **Solution**: 
+- **Solution Applied to Both Delete Buttons**: 
   1. Fixed useTaskStorage deleteTask with functional setState and empty dependency array
-  2. Replaced `Alert.alert()` with `window.confirm()` in task-detail.tsx for web compatibility
-- Delete buttons now properly remove reminders from the app on all screens
+  2. Replaced `Alert.alert()` with `window.confirm()` in both:
+     - **TaskCard.tsx** (delete button on task list cards)
+     - **task-detail.tsx** (delete button in task detail screen)
+- **Result**: Delete buttons now work properly on all screens with native browser confirmation dialogs
+- All CRUD operations (Create, Read, Update, Delete) now fully functional
 
 ### December 2, 2025 - Web Date Picker Implementation  
 - Implemented fully functional date picker for "Custom Times" schedule type

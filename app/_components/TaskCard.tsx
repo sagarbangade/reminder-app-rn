@@ -28,14 +28,10 @@ interface TaskCardProps {
  */
 export const TaskCard: React.FC<TaskCardProps> = ({ task, onPress, onEdit, onDelete, upcomingCount = 0 }) => {
   const handleDelete = () => {
-    Alert.alert('Delete Task', `Are you sure you want to delete "${task.title}"?`, [
-      { text: 'Cancel', onPress: () => {} },
-      {
-        text: 'Delete',
-        onPress: () => onDelete(task.id),
-        style: 'destructive',
-      },
-    ]);
+    const confirmed = window.confirm(`Are you sure you want to delete "${task.title}"?`);
+    if (confirmed) {
+      onDelete(task.id);
+    }
   };
 
   const getScheduleDisplayText = (): string => {
