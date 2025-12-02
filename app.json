@@ -1,19 +1,22 @@
 {
   "expo": {
-    "name": "reminder-app",
-    "slug": "reminder-app",
+    "name": "Athvanara",
+    "slug": "athvanara",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "reminderapp",
+    "scheme": "athvanara",
     "userInterfaceStyle": "automatic",
+    "description": "A beautiful and reliable reminder app to help you stay on track with your daily tasks and medications.",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.athvanara.app"
     },
     "android": {
+      "package": "com.athvanara.app",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#6366F1",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -44,6 +47,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "81664950-f3e6-4618-8dad-572f12becd4c"
+      }
     }
   }
 }
