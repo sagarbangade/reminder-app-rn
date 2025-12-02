@@ -165,33 +165,22 @@ export default function TaskDetailScreen() {
    * Handle delete task
    */
   const handleDelete = async () => {
-    console.log('handleDelete called, task:', task?.id);
     if (!task) {
-      console.error('No task to delete');
+      Alert.alert('Error', 'No task to delete');
       return;
     }
     
-    Alert.alert('Delete Task', `Are you sure you want to delete "${task.title}"?`, [
-      { text: 'Cancel', onPress: () => console.log('Delete cancelled') },
-      {
-        text: 'Delete',
-        onPress: async () => {
-          console.log('Delete confirmed, starting deletion');
-          try {
-            console.log('Deleting task:', task.id);
-            await deleteTask(task.id);
-            console.log('Task deleted successfully');
-            try { await Haptics.selectionAsync(); } catch {}
-            showToast('success', 'Task deleted');
-            router.back();
-          } catch (e) {
-            console.error('Delete error:', e);
-            Alert.alert('Error', `Failed to delete task: ${e instanceof Error ? e.message : 'Unknown error'}`);
-          }
-        },
-        style: 'destructive',
-      },
-    ]);
+    const confirmed = window.confirm(`Are you sure you want to delete "${task.title}"?`);
+    if (!confirmed) return;
+
+    try {
+      await deleteTask(task.id);
+      try { await Haptics.selectionAsync(); } catch {}
+      showToast('success', 'Task deleted');
+      router.back();
+    } catch (e) {
+      Alert.alert('Error', `Failed to delete task: ${e instanceof Error ? e.message : 'Unknown error'}`);
+    }
   };
 
   /**
