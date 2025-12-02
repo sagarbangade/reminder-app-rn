@@ -30,14 +30,14 @@ A smart reminder application that helps users stay on track with medication sche
 
 ## Recent Changes
 
-### December 2, 2025 - Web Date Picker Fix
-- Fixed date picker for "Custom Times" schedule type on web platform
-- The original @react-native-community/datetimepicker doesn't work on web
-- Created WebDatePicker component that:
-  - Uses TextInput with YYYY-MM-DD format on web
-  - Preserves native DateTimePicker behavior on iOS/Android
-  - Includes input validation with visual error feedback
-  - Stores raw text locally to allow incremental typing
+### December 2, 2025 - Web Date Picker Implementation  
+- Implemented fully functional date picker for "Custom Times" schedule type
+- Created WebDatePicker component with platform-specific rendering:
+  - **Web**: Uses native HTML `<input type="date">` for optimal UX
+  - **iOS/Android**: Uses @react-native-community/datetimepicker
+- Removed react-native-modal-datetime-picker (no web support)
+- Date selection now works seamlessly on web with native browser date picker
+- Dates are properly formatted and stored
 
 ### December 2, 2025 - Initial Replit Setup
 - Configured Expo to run web server on port 5000 using `RCT_METRO_PORT` environment variable

@@ -4,7 +4,6 @@
 
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import React, { useEffect, useState } from 'react';
 import {
     Alert,
@@ -42,12 +41,42 @@ const WebDatePicker: React.FC<WebDatePickerProps> = ({
   disabled,
   index,
 }) => {
-  const [isOpen, setIsOpen] = useState(false);
+  if (Platform.OS === 'web') {
+    const dateString = value 
+      ? `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`
+      : '';
+
+    return (
+      <View style={webDatePickerStyles.webContainer}>
+        <input
+          type="date"
+          value={dateString}
+          onChange={(e: any) => {
+            if (e.target.value) {
+              const [year, month, day] = e.target.value.split('-');
+              onChange(new Date(parseInt(year), parseInt(month) - 1, parseInt(day)));
+            }
+          }}
+          disabled={disabled}
+          style={{
+            padding: '8px 12px',
+            borderRadius: '8px',
+            border: '1px solid #E0E0E0',
+            fontSize: '14px',
+            fontFamily: 'system-ui, -apple-system, sans-serif',
+            cursor: disabled ? 'not-allowed' : 'pointer',
+            opacity: disabled ? 0.6 : 1,
+            minWidth: '140px',
+          } as any}
+        />
+      </View>
+    );
+  }
 
   return (
     <>
       <Pressable
-        onPress={() => !disabled && setIsOpen(true)}
+        onPress={() => !disabled}
         disabled={disabled}
         style={webDatePickerStyles.selectButton}
       >
@@ -55,36 +84,32 @@ const WebDatePicker: React.FC<WebDatePickerProps> = ({
           {value ? value.toLocaleDateString() : 'Select date'}
         </Text>
       </Pressable>
-      <DateTimePickerModal
-        isVisible={isOpen}
-        mode="date"
-        onConfirm={(date) => {
-          onChange(date);
-          setIsOpen(false);
-        }}
-        onCancel={() => setIsOpen(false)}
-        date={value || new Date()}
-      />
+      {Platform.OS === 'ios' ? (
+        <DateTimePicker
+          value={value || new Date()}
+          mode="date"
+          display="spinner"
+          onChange={(e, date) => {
+            if (date) onChange(date);
+          }}
+        />
+      ) : (
+        <DateTimePicker
+          value={value || new Date()}
+          mode="date"
+          display="default"
+          onChange={(e, date) => {
+            if (date) onChange(date);
+          }}
+        />
+      )}
     </>
   );
 };
 
 const webDatePickerStyles = StyleSheet.create({
-  container: {
-    minWidth: 130,
-  },
-  input: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: '#FFF',
-    borderRadius: 8,
-    fontSize: 14,
-    minWidth: 130,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 4,
+  webContainer: {
+    minWidth: 140,
   },
   selectButton: {
     paddingHorizontal: 12,
@@ -103,38 +128,6 @@ const webDatePickerStyles = StyleSheet.create({
   selectText: {
     color: '#333',
     fontSize: 14,
-  },
-  modal: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContainer: {
-    backgroundColor: '#FFF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingBottom: 20,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
-  },
-  cancelText: {
-    fontSize: 16,
-    color: '#666',
-  },
-  doneText: {
-    fontSize: 16,
-    color: Colors.primary,
-    fontWeight: '600',
-  },
-  picker: {
-    height: 200,
   },
 });
 
