@@ -9,6 +9,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "dev": "RCT_METRO_PORT=5000 expo start --web --port 5000",
+    "build": "expo export --platform web",
     "lint": "expo lint"
   },
   "dependencies": {
