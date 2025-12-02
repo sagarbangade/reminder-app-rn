@@ -30,6 +30,13 @@ A smart reminder application that helps users stay on track with medication sche
 
 ## Recent Changes
 
+### December 2, 2025 - Delete Functionality Fix
+- Fixed delete reminder buttons not working properly
+- Issue was a stale closure problem in useTaskStorage hook where deleteTask depended on tasks array
+- Solution: Used functional setState with `setTasks((prevTasks) => prevTasks.filter(...))` to avoid stale closures
+- Changed deleteTask dependency array to empty `[]` since it no longer needs external state
+- Delete buttons now properly remove reminders from the app
+
 ### December 2, 2025 - Web Date Picker Implementation  
 - Implemented fully functional date picker for "Custom Times" schedule type
 - Created WebDatePicker component with platform-specific rendering:
