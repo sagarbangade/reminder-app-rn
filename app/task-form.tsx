@@ -8,6 +8,7 @@ import { Alert, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TaskForm } from './_components/TaskForm';
 import { useTaskStorage } from './_hooks/useTaskStorage';
+import { Colors } from './_styles/theme';
 import { Task } from './_types/Task';
 
 /**
@@ -75,6 +76,6 @@ export default function TaskFormScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.bg,
   },
 });

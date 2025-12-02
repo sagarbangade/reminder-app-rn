@@ -30,6 +30,16 @@ A smart reminder application that helps users stay on track with medication sche
 
 ## Recent Changes
 
+### December 2, 2025 - UI Redesign & Polish
+- Implemented modern design system with improved color palette (Indigo primary, Green success, Red danger)
+- Enhanced typography hierarchy with better font weights and sizes
+- Improved spacing system with xs, s, m, l, xl, xxl values
+- Better border radius consistency (sm, md, lg, xl)
+- TaskCard: Better visual structure, softer shadows, improved action buttons (green edit, red delete)
+- TaskListScreen: Clean light background, larger header with better spacing
+- Empty state: Better typography and hierarchy
+- All components use consistent spacing and shadows
+
 ### December 2, 2025 - Delete Functionality Fix (COMPLETE)
 - **Root Cause**: React Native's `Alert.alert()` component doesn't properly handle button callbacks on web platforms
 - **Solution Applied to Both Delete Buttons**: 
