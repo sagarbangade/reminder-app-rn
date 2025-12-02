@@ -4,6 +4,7 @@
 
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import React, { useEffect, useState } from 'react';
 import {
     Alert,
@@ -33,11 +34,6 @@ interface WebDatePickerProps {
   onChange: (date: Date) => void;
   disabled?: boolean;
   index: number;
-  showDatePickerIndex: number | null;
-  setShowDatePickerIndex: (index: number | null) => void;
-  tempSelectedDate: Date | null;
-  onChangeDate: (event: any, selectedDate?: Date) => void;
-  confirmDateSelection: () => void;
 }
 
 const WebDatePicker: React.FC<WebDatePickerProps> = ({
@@ -45,75 +41,13 @@ const WebDatePicker: React.FC<WebDatePickerProps> = ({
   onChange,
   disabled,
   index,
-  showDatePickerIndex,
-  setShowDatePickerIndex,
-  tempSelectedDate,
-  onChangeDate,
-  confirmDateSelection,
 }) => {
-  const [rawText, setRawText] = useState(value ? value.toISOString().split('T')[0] : '');
-  const [isValid, setIsValid] = useState(true);
-
-  React.useEffect(() => {
-    if (value) {
-      setRawText(value.toISOString().split('T')[0]);
-      setIsValid(true);
-    }
-  }, [value]);
-
-  const validateAndUpdate = (text: string) => {
-    if (!text) {
-      setIsValid(true);
-      return;
-    }
-    if (/^\d{4}-\d{2}-\d{2}$/.test(text)) {
-      const [year, month, day] = text.split('-').map(Number);
-      const testDate = new Date(year, month - 1, day);
-      if (testDate.getFullYear() === year && 
-          testDate.getMonth() === month - 1 && 
-          testDate.getDate() === day &&
-          year >= 2020 && year <= 2100) {
-        setIsValid(true);
-        onChange(new Date(text + 'T00:00:00'));
-      } else {
-        setIsValid(false);
-      }
-    } else {
-      setIsValid(false);
-    }
-  };
-
-  if (Platform.OS === 'web') {
-    return (
-      <View style={webDatePickerStyles.container}>
-        <TextInput
-          style={[
-            webDatePickerStyles.input,
-            !isValid && webDatePickerStyles.inputError,
-          ]}
-          value={rawText}
-          placeholder="YYYY-MM-DD"
-          onChangeText={(text) => {
-            setRawText(text);
-            if (/^\d{4}-\d{2}-\d{2}$/.test(text)) {
-              validateAndUpdate(text);
-            }
-          }}
-          onBlur={() => validateAndUpdate(rawText)}
-          editable={!disabled}
-          maxLength={10}
-        />
-        {!isValid && rawText.length > 0 && (
-          <Text style={webDatePickerStyles.errorText}>Invalid date</Text>
-        )}
-      </View>
-    );
-  }
+  const [isOpen, setIsOpen] = useState(false);
 
   return (
     <>
       <Pressable
-        onPress={() => setShowDatePickerIndex(index)}
+        onPress={() => !disabled && setIsOpen(true)}
         disabled={disabled}
         style={webDatePickerStyles.selectButton}
       >
@@ -121,43 +55,16 @@ const WebDatePicker: React.FC<WebDatePickerProps> = ({
           {value ? value.toLocaleDateString() : 'Select date'}
         </Text>
       </Pressable>
-      {showDatePickerIndex === index && (
-        Platform.OS === 'ios' ? (
-          <Modal
-            visible={showDatePickerIndex === index}
-            transparent
-            animationType="slide"
-            onRequestClose={() => setShowDatePickerIndex(null)}
-          >
-            <View style={webDatePickerStyles.modal}>
-              <View style={webDatePickerStyles.modalContainer}>
-                <View style={webDatePickerStyles.modalHeader}>
-                  <Pressable onPress={() => setShowDatePickerIndex(null)}>
-                    <Text style={webDatePickerStyles.cancelText}>Cancel</Text>
-                  </Pressable>
-                  <Pressable onPress={confirmDateSelection}>
-                    <Text style={webDatePickerStyles.doneText}>Done</Text>
-                  </Pressable>
-                </View>
-                <DateTimePicker
-                  value={tempSelectedDate || value || new Date()}
-                  mode="date"
-                  display="spinner"
-                  onChange={onChangeDate}
-                  style={webDatePickerStyles.picker}
-                />
-              </View>
-            </View>
-          </Modal>
-        ) : (
-          <DateTimePicker
-            value={value || new Date()}
-            mode="date"
-            display="default"
-            onChange={onChangeDate}
-          />
-        )
-      )}
+      <DateTimePickerModal
+        isVisible={isOpen}
+        mode="date"
+        onConfirm={(date) => {
+          onChange(date);
+          setIsOpen(false);
+        }}
+        onCancel={() => setIsOpen(false)}
+        date={value || new Date()}
+      />
     </>
   );
 };
@@ -228,15 +135,6 @@ const webDatePickerStyles = StyleSheet.create({
   },
   picker: {
     height: 200,
-  },
-  inputError: {
-    borderWidth: 1,
-    borderColor: '#FF3B30',
-  },
-  errorText: {
-    color: '#FF3B30',
-    fontSize: 11,
-    marginTop: 4,
   },
 });
 
@@ -608,11 +506,6 @@ export const TaskForm: React.FC<TaskFormProps> = ({ initialTask, onSave, onCance
                 }}
                 disabled={isSaving}
                 index={index}
-                showDatePickerIndex={showDatePickerIndex}
-                setShowDatePickerIndex={setShowDatePickerIndex}
-                tempSelectedDate={tempSelectedDate}
-                onChangeDate={onChangeDate}
-                confirmDateSelection={confirmDateSelection}
               />
             )}
             {uiTimes.length > 1 && (
