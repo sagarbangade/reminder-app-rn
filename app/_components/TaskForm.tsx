@@ -28,6 +28,218 @@ interface TaskFormProps {
   onCancel: () => void;
 }
 
+interface WebDatePickerProps {
+  value: Date | null;
+  onChange: (date: Date) => void;
+  disabled?: boolean;
+  index: number;
+  showDatePickerIndex: number | null;
+  setShowDatePickerIndex: (index: number | null) => void;
+  tempSelectedDate: Date | null;
+  onChangeDate: (event: any, selectedDate?: Date) => void;
+  confirmDateSelection: () => void;
+}
+
+const WebDatePicker: React.FC<WebDatePickerProps> = ({
+  value,
+  onChange,
+  disabled,
+  index,
+  showDatePickerIndex,
+  setShowDatePickerIndex,
+  tempSelectedDate,
+  onChangeDate,
+  confirmDateSelection,
+}) => {
+  const [rawText, setRawText] = useState(value ? value.toISOString().split('T')[0] : '');
+  const [isValid, setIsValid] = useState(true);
+
+  React.useEffect(() => {
+    if (value) {
+      setRawText(value.toISOString().split('T')[0]);
+      setIsValid(true);
+    }
+  }, [value]);
+
+  const validateAndUpdate = (text: string) => {
+    if (!text) {
+      setIsValid(true);
+      return;
+    }
+    if (/^\d{4}-\d{2}-\d{2}$/.test(text)) {
+      const [year, month, day] = text.split('-').map(Number);
+      const testDate = new Date(year, month - 1, day);
+      if (testDate.getFullYear() === year && 
+          testDate.getMonth() === month - 1 && 
+          testDate.getDate() === day &&
+          year >= 2020 && year <= 2100) {
+        setIsValid(true);
+        onChange(new Date(text + 'T00:00:00'));
+      } else {
+        setIsValid(false);
+      }
+    } else {
+      setIsValid(false);
+    }
+  };
+
+  if (Platform.OS === 'web') {
+    return (
+      <View style={webDatePickerStyles.container}>
+        <TextInput
+          style={[
+            webDatePickerStyles.input,
+            !isValid && webDatePickerStyles.inputError,
+          ]}
+          value={rawText}
+          placeholder="YYYY-MM-DD"
+          onChangeText={(text) => {
+            setRawText(text);
+            if (/^\d{4}-\d{2}-\d{2}$/.test(text)) {
+              validateAndUpdate(text);
+            }
+          }}
+          onBlur={() => validateAndUpdate(rawText)}
+          editable={!disabled}
+          maxLength={10}
+        />
+        {!isValid && rawText.length > 0 && (
+          <Text style={webDatePickerStyles.errorText}>Invalid date</Text>
+        )}
+      </View>
+    );
+  }
+
+  return (
+    <>
+      <Pressable
+        onPress={() => setShowDatePickerIndex(index)}
+        disabled={disabled}
+        style={webDatePickerStyles.selectButton}
+      >
+        <Text style={webDatePickerStyles.selectText}>
+          {value ? value.toLocaleDateString() : 'Select date'}
+        </Text>
+      </Pressable>
+      {showDatePickerIndex === index && (
+        Platform.OS === 'ios' ? (
+          <Modal
+            visible={showDatePickerIndex === index}
+            transparent
+            animationType="slide"
+            onRequestClose={() => setShowDatePickerIndex(null)}
+          >
+            <View style={webDatePickerStyles.modal}>
+              <View style={webDatePickerStyles.modalContainer}>
+                <View style={webDatePickerStyles.modalHeader}>
+                  <Pressable onPress={() => setShowDatePickerIndex(null)}>
+                    <Text style={webDatePickerStyles.cancelText}>Cancel</Text>
+                  </Pressable>
+                  <Pressable onPress={confirmDateSelection}>
+                    <Text style={webDatePickerStyles.doneText}>Done</Text>
+                  </Pressable>
+                </View>
+                <DateTimePicker
+                  value={tempSelectedDate || value || new Date()}
+                  mode="date"
+                  display="spinner"
+                  onChange={onChangeDate}
+                  style={webDatePickerStyles.picker}
+                />
+              </View>
+            </View>
+          </Modal>
+        ) : (
+          <DateTimePicker
+            value={value || new Date()}
+            mode="date"
+            display="default"
+            onChange={onChangeDate}
+          />
+        )
+      )}
+    </>
+  );
+};
+
+const webDatePickerStyles = StyleSheet.create({
+  container: {
+    minWidth: 130,
+  },
+  input: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: '#FFF',
+    borderRadius: 8,
+    fontSize: 14,
+    minWidth: 130,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  selectButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: '#FFF',
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minWidth: 110,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  selectText: {
+    color: '#333',
+    fontSize: 14,
+  },
+  modal: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContainer: {
+    backgroundColor: '#FFF',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+  },
+  cancelText: {
+    fontSize: 16,
+    color: '#666',
+  },
+  doneText: {
+    fontSize: 16,
+    color: Colors.primary,
+    fontWeight: '600',
+  },
+  picker: {
+    height: 200,
+  },
+  inputError: {
+    borderWidth: 1,
+    borderColor: '#FF3B30',
+  },
+  errorText: {
+    color: '#FF3B30',
+    fontSize: 11,
+    marginTop: 4,
+  },
+});
+
 /**
  * TaskForm - Form for creating/editing tasks with schedule configuration
  */
@@ -387,54 +599,21 @@ export const TaskForm: React.FC<TaskFormProps> = ({ initialTask, onSave, onCance
               <Text style={styles.meridiemButtonText}>{meridiems[index]}</Text>
             </Pressable>
             {scheduleType === 'customTimes' && (
-              <>
-                <Pressable
-                  onPress={() => setShowDatePickerIndex(index)}
-                  disabled={isSaving}
-                  style={styles.selectDateButton}
-                >
-                  <Text style={styles.selectDateText}>
-                    {customDates[index] ? customDates[index]!.toLocaleDateString() : 'Select date'}
-                  </Text>
-                </Pressable>
-                {showDatePickerIndex === index && (
-                  Platform.OS === 'ios' ? (
-                    <Modal
-                      visible={showDatePickerIndex === index}
-                      transparent
-                      animationType="slide"
-                      onRequestClose={() => setShowDatePickerIndex(null)}
-                    >
-                      <View style={styles.datePickerModal}>
-                        <View style={styles.datePickerContainer}>
-                          <View style={styles.datePickerHeader}>
-                            <Pressable onPress={() => setShowDatePickerIndex(null)}>
-                              <Text style={styles.datePickerCancel}>Cancel</Text>
-                            </Pressable>
-                            <Pressable onPress={confirmDateSelection}>
-                              <Text style={styles.datePickerDone}>Done</Text>
-                            </Pressable>
-                          </View>
-                          <DateTimePicker
-                            value={tempSelectedDate || customDates[index] || new Date()}
-                            mode="date"
-                            display="spinner"
-                            onChange={onChangeDate}
-                            style={styles.datePicker}
-                          />
-                        </View>
-                      </View>
-                    </Modal>
-                  ) : (
-                    <DateTimePicker
-                      value={customDates[index] || new Date()}
-                      mode="date"
-                      display="default"
-                      onChange={onChangeDate}
-                    />
-                  )
-                )}
-              </>
+              <WebDatePicker
+                value={customDates[index]}
+                onChange={(date) => {
+                  const newDates = [...customDates];
+                  newDates[index] = date;
+                  setCustomDates(newDates);
+                }}
+                disabled={isSaving}
+                index={index}
+                showDatePickerIndex={showDatePickerIndex}
+                setShowDatePickerIndex={setShowDatePickerIndex}
+                tempSelectedDate={tempSelectedDate}
+                onChangeDate={onChangeDate}
+                confirmDateSelection={confirmDateSelection}
+              />
             )}
             {uiTimes.length > 1 && (
               <Pressable
