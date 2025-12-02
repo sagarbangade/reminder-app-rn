@@ -6,7 +6,6 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import React, { useEffect, useState } from 'react';
 import {
-    Alert,
     Modal,
     Platform,
     Pressable,
@@ -19,6 +18,7 @@ import {
 import { Colors, Radii } from '../_styles/theme';
 import { ScheduleType, Task } from '../_types/Task';
 import { isValidTimeFormat } from '../_utils/scheduleUtils';
+import { showErrorToast } from '../_utils/toastUtils';
 import { JellyButton } from './JellyButton';
 import { NotificationCalendar } from './NotificationCalendar';
 
@@ -59,14 +59,16 @@ const WebDatePicker: React.FC<WebDatePickerProps> = ({
           }}
           disabled={disabled}
           style={{
-            padding: '8px 12px',
+            padding: '10px 12px',
             borderRadius: '8px',
             border: '1px solid #E0E0E0',
             fontSize: '14px',
             fontFamily: 'system-ui, -apple-system, sans-serif',
             cursor: disabled ? 'not-allowed' : 'pointer',
             opacity: disabled ? 0.6 : 1,
-            minWidth: '140px',
+            width: '100%',
+            maxWidth: '200px',
+            boxSizing: 'border-box',
           } as any}
         />
       </View>
@@ -109,25 +111,29 @@ const WebDatePicker: React.FC<WebDatePickerProps> = ({
 
 const webDatePickerStyles = StyleSheet.create({
   webContainer: {
-    minWidth: 140,
+    flex: 1,
+    maxWidth: 200,
   },
   selectButton: {
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 10,
     backgroundColor: '#FFF',
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
     justifyContent: 'center',
     alignItems: 'center',
-    minWidth: 110,
+    flex: 1,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   selectText: {
     color: '#333',
     fontSize: 14,
+    fontWeight: '500',
   },
 });
 
@@ -194,13 +200,13 @@ export const TaskForm: React.FC<TaskFormProps> = ({ initialTask, onSave, onCance
    */
   const validateForm = (): boolean => {
     if (!title.trim()) {
-      Alert.alert('Validation Error', 'Please enter a title');
+      showErrorToast('Please enter a title');
       return false;
     }
 
     // validate uiTimes + meridiems by converting to 24-hour then validating
     if (uiTimes.length === 0) {
-      Alert.alert('Validation Error', 'Please enter at least one time');
+      showErrorToast('Please enter at least one time');
       return false;
     }
     const converted = uiTimes.map((t, i) => {
@@ -208,14 +214,14 @@ export const TaskForm: React.FC<TaskFormProps> = ({ initialTask, onSave, onCance
       return convertTo24Hour(t.trim(), m);
     });
     if (converted.some((ct) => !isValidTimeFormat(ct))) {
-      Alert.alert('Validation Error', 'Please enter valid times (HH:MM format)');
+      showErrorToast('Please enter valid times (HH:MM format)');
       return false;
     }
 
     if (scheduleType === 'alternateDays') {
       const interval = parseInt(alternateInterval);
       if (isNaN(interval) || interval < 1) {
-        Alert.alert('Validation Error', 'Please enter a valid interval (1 or more)');
+        showErrorToast('Please enter a valid interval (1 or more)');
         return false;
       }
     }
@@ -223,7 +229,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({ initialTask, onSave, onCance
     if (scheduleType === 'customTimes') {
       // ensure each custom entry has a selected date
       if (!customDates || customDates.length !== uiTimes.length || customDates.some((d) => !d)) {
-        Alert.alert('Validation Error', 'Please select a date for each custom time');
+        showErrorToast('Please select a date for each custom time');
         return false;
       }
       // ensure dates are in the future
@@ -236,7 +242,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({ initialTask, onSave, onCance
         const dt = new Date(d);
         dt.setHours(hh, mm, 0, 0);
         if (dt <= now) {
-          Alert.alert('Validation Error', 'Custom date/time must be in the future');
+          showErrorToast('Custom date/time must be in the future');
           return false;
         }
       }
@@ -280,7 +286,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({ initialTask, onSave, onCance
       setIsSaving(false);
     } catch {
       setIsSaving(false);
-      Alert.alert('Error', 'Failed to save task. Please try again.');
+      showErrorToast('Failed to save task. Please try again');
     }
   };
 
@@ -473,42 +479,47 @@ export const TaskForm: React.FC<TaskFormProps> = ({ initialTask, onSave, onCance
         </View>
 
         {uiTimes.map((uiTime, index) => (
-          <View key={index} style={styles.timeInputRow}>
-            <TextInput
-              style={styles.timeInput}
-              placeholder="HH:MM"
-              value={uiTime}
-              onChangeText={(value) => updateTime(index, value)}
-              editable={!isSaving}
-              maxLength={5}
-            />
-            <Pressable
-              style={[styles.meridiemButton, meridiems[index] === 'AM' && styles.meridiemButtonAM]}
-              onPress={() => toggleMeridiem(index)}
-              disabled={isSaving}
-            >
-              <Text style={styles.meridiemButtonText}>{meridiems[index]}</Text>
-            </Pressable>
-            {scheduleType === 'customTimes' && (
-              <WebDatePicker
-                value={customDates[index]}
-                onChange={(date) => {
-                  const newDates = [...customDates];
-                  newDates[index] = date;
-                  setCustomDates(newDates);
-                }}
-                disabled={isSaving}
-                index={index}
+          <View key={index} style={styles.timeEntryContainer}>
+            <View style={styles.timeInputRow}>
+              <TextInput
+                style={styles.timeInput}
+                placeholder="HH:MM"
+                value={uiTime}
+                onChangeText={(value) => updateTime(index, value)}
+                editable={!isSaving}
+                maxLength={5}
               />
-            )}
-            {uiTimes.length > 1 && (
               <Pressable
-                onPress={() => removeTime(index)}
+                style={[styles.meridiemButton, meridiems[index] === 'AM' && styles.meridiemButtonAM]}
+                onPress={() => toggleMeridiem(index)}
                 disabled={isSaving}
-                style={styles.removeButton}
               >
-                <Text style={styles.removeButtonText}>Remove</Text>
+                <Text style={styles.meridiemButtonText}>{meridiems[index]}</Text>
               </Pressable>
+              {uiTimes.length > 1 && (
+                <Pressable
+                  onPress={() => removeTime(index)}
+                  disabled={isSaving}
+                  style={styles.removeButton}
+                >
+                  <Text style={styles.removeButtonText}>Remove</Text>
+                </Pressable>
+              )}
+            </View>
+            {scheduleType === 'customTimes' && (
+              <View style={styles.datePickerRow}>
+                <Text style={styles.dateLabel}>Date:</Text>
+                <WebDatePicker
+                  value={customDates[index]}
+                  onChange={(date) => {
+                    const newDates = [...customDates];
+                    newDates[index] = date;
+                    setCustomDates(newDates);
+                  }}
+                  disabled={isSaving}
+                  index={index}
+                />
+              </View>
             )}
           </View>
         ))}
@@ -669,11 +680,30 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 14,
   },
+  timeEntryContainer: {
+    marginBottom: 12,
+    padding: 12,
+    backgroundColor: '#FAFAFA',
+    borderRadius: Radii.md,
+    borderWidth: 1,
+    borderColor: '#E8E8E8',
+  },
   timeInputRow: {
     flexDirection: 'row',
-    marginBottom: 8,
     gap: 8,
     alignItems: 'center',
+  },
+  datePickerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 10,
+    gap: 8,
+  },
+  dateLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.textSecondary,
+    minWidth: 45,
   },
   timeInput: {
     flex: 1,
@@ -746,7 +776,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   meridiemButtonAM: {
-    backgroundColor: Colors.lime,
+    backgroundColor: Colors.primary,
   },
   meridiemButtonText: {
     color: '#FFF',

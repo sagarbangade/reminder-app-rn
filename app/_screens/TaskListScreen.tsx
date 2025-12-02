@@ -8,12 +8,11 @@ import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect } from 'react';
 import {
-  Alert,
-  FlatList,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
+    FlatList,
+    Pressable,
+    StyleSheet,
+    Text,
+    View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomTabs } from '../_components/BottomTabs';
@@ -21,7 +20,7 @@ import { TaskCard } from '../_components/TaskCard';
 import { useTaskStorage } from '../_hooks/useTaskStorage';
 import { Colors, Radii } from '../_styles/theme';
 import { getUpcomingCountForTask } from '../_utils/scheduleUtils';
-import { showToast } from '../_utils/toastUtils';
+import { showErrorToast, showToast } from '../_utils/toastUtils';
 
 /**
  * TaskListScreen displays all tasks and allows navigation to add/edit tasks
@@ -61,7 +60,7 @@ export const TaskListScreen: React.FC = () => {
       // refresh list
       await loadTasks();
     } catch {
-      Alert.alert('Error', 'Failed to delete task');
+      showErrorToast('Failed to delete task');
     }
   };
 
@@ -198,8 +197,9 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: 16,
-    paddingVertical: 20,
-    gap: 12,
+    paddingTop: 16,
+    paddingBottom: 100, // Extra padding for bottom tabs
+    gap: 14,
   },
   centerContent: {
     flex: 1,

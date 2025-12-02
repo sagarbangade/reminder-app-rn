@@ -2,7 +2,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
  
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomTabs } from './_components/BottomTabs';
@@ -10,7 +10,7 @@ import { Colors, Radii } from './_styles/theme';
 import { Task } from './_types/Task';
 import { cancelTaskNotifications, schedulePersistentFollowupsForOccurrence } from './_utils/scheduleUtils';
 import { acknowledgeOccurrence, deletePersistentSchedule, getAllTasks, getPersistentSchedule, isOccurrenceAcknowledged, unacknowledgeOccurrence } from './_utils/storageUtils';
-import { showToast } from './_utils/toastUtils';
+import { showErrorToast, showToast } from './_utils/toastUtils';
 
 export default function UpcomingScreen() {
   const insets = useSafeAreaInsets();
@@ -115,7 +115,7 @@ export default function UpcomingScreen() {
       }
       await loadUpcoming();
     } catch {
-      Alert.alert('Error', 'Failed to toggle acknowledge');
+      showErrorToast('Failed to toggle acknowledge');
     }
   };
 
@@ -202,6 +202,7 @@ const styles = StyleSheet.create({
   scroll: {
     flex: 1,
     paddingHorizontal: 16,
+    paddingBottom: 100, // Extra padding for bottom tabs
   },
   empty: {
     fontSize: 16,

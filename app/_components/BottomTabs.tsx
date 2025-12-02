@@ -9,30 +9,34 @@ export function BottomTabs() {
   const router = useRouter();
   const pathname = usePathname();
   const tabs = [
-    { label: 'All', icon: 'view-list', route: '/', key: 'all' },
-    { label: 'Upcoming', icon: 'clock-outline', route: '/upcoming', key: 'upcoming' },
-    { label: 'Add', icon: 'plus', route: '/task-form', key: 'add' },
+    { label: 'All Tasks', icon: 'format-list-bulleted', route: '/', key: 'all' },
+    { label: 'Upcoming', icon: 'clock-time-four-outline', route: '/upcoming', key: 'upcoming' },
+    { label: 'Add New', icon: 'plus-circle', route: '/task-form', key: 'add' },
   ];
 
   const TabItem: React.FC<{ tab: typeof tabs[0]; isActive: boolean }> = ({ tab, isActive }) => {
     const scale = useSharedValue(isActive ? 1.05 : 1);
     const iconStyle = useAnimatedStyle(() => ({ transform: [{ scale: withTiming(scale.value, { duration: 160 }) }] }));
+    
     return (
       <Pressable
         key={tab.key}
-        style={styles.tabButton}
+        style={[styles.tabButton, isActive && styles.tabButtonActive]}
         onPress={() => (router.push as any)(tab.route)}
-        onPressIn={() => { scale.value = 0.96; }}
+        onPressIn={() => { scale.value = 0.94; }}
         onPressOut={() => { scale.value = isActive ? 1.05 : 1; }}
       >
         {tab.key === 'add' ? (
           <Animated.View style={[styles.addPill, isActive && styles.activePill, iconStyle]}>
-            <MaterialCommunityIcons name={tab.icon as any} size={18} color="#FFF" />
+            <MaterialCommunityIcons name={tab.icon as any} size={24} color="#FFF" />
           </Animated.View>
         ) : (
           <Animated.View style={[styles.iconWrap, iconStyle]}>
-            <MaterialCommunityIcons name={tab.icon as any} size={20} color={isActive ? Colors.neon : Colors.textMuted} />
-            {isActive && <View style={styles.activeDot} />}
+            <MaterialCommunityIcons 
+              name={tab.icon as any} 
+              size={24} 
+              color={isActive ? Colors.primary : Colors.textMuted} 
+            />
           </Animated.View>
         )}
         <Text style={[styles.tabText, isActive && styles.tabTextActive]}>{tab.label}</Text>
@@ -60,43 +64,59 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     alignItems: 'center',
     backgroundColor: Colors.card,
-    paddingVertical: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 8,
     borderRadius: Radii.lg,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   tabButton: {
     alignItems: 'center',
     justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: Radii.md,
+    minWidth: 80,
+  },
+  tabButtonActive: {
+    backgroundColor: Colors.primaryLight,
   },
   tabText: {
-    fontSize: 12,
+    fontSize: 11,
     color: Colors.textMuted,
     marginTop: 6,
     fontWeight: '700',
+    letterSpacing: 0.3,
   },
   tabTextActive: {
-    color: Colors.neon,
+    color: Colors.primary,
   },
   addPill: {
     backgroundColor: Colors.neon,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: Colors.neon,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.18,
-    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
     elevation: 6,
   },
   activePill: {
     backgroundColor: Colors.primary,
+    shadowColor: Colors.primary,
   },
-  iconWrap: { alignItems: 'center', justifyContent: 'center' },
-  activeDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: Colors.neon, marginTop: 6 },
+  iconWrap: { 
+    alignItems: 'center', 
+    justifyContent: 'center',
+    width: 44,
+    height: 44,
+  },
 });

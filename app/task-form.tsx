@@ -4,12 +4,13 @@
 
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
-import { Alert, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TaskForm } from './_components/TaskForm';
 import { useTaskStorage } from './_hooks/useTaskStorage';
 import { Colors } from './_styles/theme';
 import { Task } from './_types/Task';
+import { showErrorToast, showSuccessToast } from './_utils/toastUtils';
 
 /**
  * TaskFormScreen allows users to add a new task or edit an existing one
@@ -31,7 +32,7 @@ export default function TaskFormScreen() {
         setTask(loadedTask);
       }
     } catch {
-      Alert.alert('Error', 'Failed to load task');
+      showErrorToast('Failed to load task');
     }
   }, [taskId, fetchTaskById]);
 
@@ -48,10 +49,10 @@ export default function TaskFormScreen() {
   const handleSaveTask = async (updatedTask: Task) => {
     try {
       await saveTask(updatedTask);
-      Alert.alert('Success', taskId ? 'Task updated' : 'Task created');
+      showSuccessToast(taskId ? 'Task updated successfully' : 'Task created successfully');
       router.back();
     } catch {
-      Alert.alert('Error', 'Failed to save task');
+      showErrorToast('Failed to save task');
     }
   };
 

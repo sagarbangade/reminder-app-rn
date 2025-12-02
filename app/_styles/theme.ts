@@ -3,6 +3,8 @@ export const Colors = {
   primaryDark: '#4F46E5',
   primaryLight: '#E0E7FF',
   secondary: '#EC4899', // Pink
+  neon: '#A855F7', // Purple neon
+  accent: '#F97316', // Orange accent
   success: '#10B981', // Green
   warning: '#F59E0B', // Amber
   danger: '#EF4444', // Red

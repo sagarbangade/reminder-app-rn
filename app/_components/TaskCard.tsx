@@ -5,15 +5,15 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React from 'react';
 import {
-    Alert,
-    Pressable,
-    StyleSheet,
-    Text,
-    View,
+  Pressable,
+  StyleSheet,
+  Text,
+  View
 } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { Colors, Radii } from '../_styles/theme';
 import { Task } from '../_types/Task';
+import { ConfirmDialog } from './ConfirmDialog';
 
 interface TaskCardProps {
   task: Task;
@@ -27,11 +27,15 @@ interface TaskCardProps {
  * TaskCard - Displays a single task with its details and action buttons
  */
 export const TaskCard: React.FC<TaskCardProps> = ({ task, onPress, onEdit, onDelete, upcomingCount = 0 }) => {
+  const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false);
+  
   const handleDelete = () => {
-    const confirmed = window.confirm(`Are you sure you want to delete "${task.title}"?`);
-    if (confirmed) {
-      onDelete(task.id);
-    }
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = () => {
+    setShowDeleteConfirm(false);
+    onDelete(task.id);
   };
 
   const getScheduleDisplayText = (): string => {
@@ -54,83 +58,94 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onPress, onEdit, onDel
 
   return (
     <Animated.View style={[styles.container, animatedStyle]}>
-      <View style={styles.cardContent}>
-        <Pressable
-          onPressIn={() => { scale.value = 0.98; }}
-          onPressOut={() => { scale.value = 1; }}
-          onPress={onPress}
-          style={styles.pressable}
-        >
-          <View style={styles.leftCol}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{(task.title || 'R').slice(0, 1).toUpperCase()}</Text>
-            </View>
+      <Pressable
+        onPressIn={() => { scale.value = 0.98; }}
+        onPressOut={() => { scale.value = 1; }}
+        onPress={onPress}
+        style={styles.pressable}
+      >
+        <View style={styles.cardHeader}>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>{(task.title || 'R').slice(0, 1).toUpperCase()}</Text>
           </View>
           <View style={styles.content}>
-            <Text style={styles.title}>{task.title}</Text>
+            <Text style={styles.title} numberOfLines={1}>{task.title}</Text>
             <Text style={styles.details} numberOfLines={2}>{task.details}</Text>
-            <View style={styles.row}>
-              <Text style={styles.schedule}>{getScheduleDisplayText()}</Text>
-            </View>
           </View>
-          <View style={styles.rightCol}>
-            <View style={styles.timesBadge}>
-              <Text style={styles.timesBadgeText}>{task.timesInDay.length}×</Text>
+          {upcomingCount > 0 && (
+            <View style={styles.upcomingBadge}>
+              <Text style={styles.upcomingBadgeText}>{upcomingCount}</Text>
             </View>
+          )}
+        </View>
+        
+        <View style={styles.cardFooter}>
+          <View style={styles.scheduleRow}>
+            <MaterialCommunityIcons name="clock-outline" size={14} color={Colors.primary} />
+            <Text style={styles.schedule}>{getScheduleDisplayText()}</Text>
           </View>
+          <View style={styles.timesBadge}>
+            <Text style={styles.timesBadgeText}>{task.timesInDay.length}×</Text>
+          </View>
+        </View>
+      </Pressable>
+
+      <View style={styles.actionGroup}>
+        <Pressable
+          style={[styles.actionIcon, styles.infoButton]}
+          onPress={onPress}
+        >
+          <MaterialCommunityIcons name="eye" size={18} color="#FFF" />
         </Pressable>
-        <View style={styles.actionGroup}>
-          <Pressable
-            style={[styles.actionIcon, styles.infoButton]}
-            onPress={onPress}
-          >
-            <MaterialCommunityIcons name="eye" size={18} color="#FFF" />
-          </Pressable>
-          <Pressable
-            style={[styles.actionIcon, styles.editButton]}
-            onPress={onEdit ? onEdit : onPress}
-          >
-            <MaterialCommunityIcons name="pencil" size={18} color="#FFF" />
-          </Pressable>
-          <Pressable
-            style={[styles.actionIcon, styles.deleteButton]}
-            onPress={handleDelete}
-          >
-            <MaterialCommunityIcons name="delete" size={18} color="#FFF" />
-          </Pressable>
-        </View>
+        <Pressable
+          style={[styles.actionIcon, styles.editButton]}
+          onPress={onEdit ? onEdit : onPress}
+        >
+          <MaterialCommunityIcons name="pencil" size={18} color="#FFF" />
+        </Pressable>
+        <Pressable
+          style={[styles.actionIcon, styles.deleteButton]}
+          onPress={handleDelete}
+        >
+          <MaterialCommunityIcons name="delete" size={18} color="#FFF" />
+        </Pressable>
       </View>
-      {upcomingCount > 0 && (
-        <View style={styles.upcomingBadge}>
-          <Text style={styles.upcomingBadgeText}>{upcomingCount}</Text>
-        </View>
-      )}
+      
+      <ConfirmDialog
+        visible={showDeleteConfirm}
+        title="Delete Task"
+        message={`Are you sure you want to delete "${task.title}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        onConfirm={confirmDelete}
+        onCancel={() => setShowDeleteConfirm(false)}
+        type="danger"
+      />
     </Animated.View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
     backgroundColor: Colors.card,
     borderRadius: Radii.lg,
-    padding: 16,
-    alignItems: 'center',
     borderWidth: 1,
     borderColor: Colors.border,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 2,
-    position: 'relative',
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+    overflow: 'hidden',
   },
-  cardContent: { flex: 1, flexDirection: 'row', alignItems: 'center' },
-  pressable: { flex: 1, flexDirection: 'row', alignItems: 'center' },
-  leftCol: {
-    width: 56,
+  pressable: { 
+    flex: 1,
+  },
+  cardHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    padding: 16,
+    paddingBottom: 12,
   },
   avatar: {
     width: 48,
@@ -141,86 +156,108 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     shadowColor: Colors.primary,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 3,
+    marginRight: 12,
   },
   avatarText: {
     color: '#fff',
     fontWeight: '900',
-    fontSize: 18,
+    fontSize: 20,
+    letterSpacing: 0.5,
   },
   content: {
     flex: 1,
-    paddingLeft: 12,
+    justifyContent: 'center',
   },
   title: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '700',
     color: Colors.textPrimary,
     marginBottom: 4,
+    letterSpacing: -0.2,
   },
   details: {
     fontSize: 13,
     color: Colors.textSecondary,
-    marginBottom: 6,
     lineHeight: 18,
   },
-  row: { flexDirection: 'row', alignItems: 'center' },
+  cardFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    paddingTop: 4,
+  },
+  scheduleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flex: 1,
+  },
   schedule: {
-    fontSize: 12,
+    fontSize: 13,
     color: Colors.primary,
     fontWeight: '600',
   },
-  rightCol: {
-    width: 50,
-    alignItems: 'flex-end',
-    justifyContent: 'flex-start',
-  },
   timesBadge: {
     backgroundColor: Colors.primaryLight,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: Radii.sm,
   },
   timesBadgeText: {
     color: Colors.primary,
     fontWeight: '700',
-    fontSize: 12,
+    fontSize: 11,
+    letterSpacing: 0.3,
   },
   actionGroup: { 
     flexDirection: 'row', 
-    marginLeft: 8,
     alignItems: 'center',
     justifyContent: 'flex-end',
-    gap: 6,
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: Colors.bgLight,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
   },
   actionIcon: {
-    width: 38,
-    height: 38,
+    width: 36,
+    height: 36,
     borderRadius: Radii.md,
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   editButton: { backgroundColor: Colors.success },
   deleteButton: { backgroundColor: Colors.danger },
   infoButton: { backgroundColor: Colors.primary },
   upcomingBadge: {
-    position: 'absolute',
-    top: 8,
-    right: 12,
     backgroundColor: Colors.secondary,
     borderRadius: Radii.md,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    minWidth: 24,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    minWidth: 28,
     alignItems: 'center',
     shadowColor: Colors.secondary,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 2,
   },
-  upcomingBadgeText: { color: '#fff', fontWeight: '800', fontSize: 11 },
+  upcomingBadgeText: { 
+    color: '#fff', 
+    fontWeight: '800', 
+    fontSize: 12,
+    letterSpacing: 0.5,
+  },
 });
 
