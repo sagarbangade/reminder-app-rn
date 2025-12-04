@@ -46,21 +46,13 @@ export class ErrorBoundary extends Component<Props, State> {
 
       return (
         <View style={styles.container}>
-          <View style={styles.iconContainer}>
-            <MaterialCommunityIcons name="alert-circle" size={64} color={Colors.danger} />
-          </View>
+          <MaterialCommunityIcons name="alert-circle" size={64} color="#FF3B30" />
           <Text style={styles.title}>Oops! Something went wrong</Text>
           <Text style={styles.message}>
-            We're sorry for the inconvenience. The app encountered an unexpected error.
+            We&apos;re sorry, but something unexpected happened. Please try restarting the app.
           </Text>
-          {__DEV__ && this.state.error && (
-            <View style={styles.errorDetails}>
-              <Text style={styles.errorText}>{this.state.error.toString()}</Text>
-            </View>
-          )}
           <Pressable style={styles.button} onPress={this.handleReset}>
-            <MaterialCommunityIcons name="refresh" size={20} color="#FFF" />
-            <Text style={styles.buttonText}>Try Again</Text>
+            <Text style={styles.buttonText}>Restart App</Text>
           </Pressable>
         </View>
       );

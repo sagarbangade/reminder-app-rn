@@ -3,42 +3,32 @@
  */
 
 import * as Notifications from 'expo-notifications';
-import { Task } from '../_types/Task';
-import { REMINDER_CATEGORY_ID } from './notificationCategories';
-
-const SNOOZE_DURATION_MINUTES = 5;
+import { TASK_REMINDER_CATEGORY } from './notificationCategories';
+import { showToast } from './toastUtils';
 
 /**
- * Snooze a notification for 5 minutes
- * @param taskId The task ID
- * @param occurrenceKey The occurrence key (ISO string)
- * @param task The task object
- * @returns The notification ID of the snoozed notification
+ * Snooze a notification for a specified duration
  */
 export async function snoozeNotification(
   taskId: string,
-  occurrenceKey: string,
-  task: Task
-): Promise<string> {
+  taskTitle: string,
+  taskDetails: string,
+  snoozeMinutes: number = 10
+): Promise<void> {
   try {
-    // Calculate snooze time (5 minutes from now)
+    // Calculate snooze time
     const snoozeDate = new Date();
-    snoozeDate.setMinutes(snoozeDate.getMinutes() + SNOOZE_DURATION_MINUTES);
+    snoozeDate.setMinutes(snoozeDate.getMinutes() + snoozeMinutes);
 
-    // Schedule the snoozed notification
-    const notificationId = await Notifications.scheduleNotificationAsync({
+    // Schedule a new notification
+    await Notifications.scheduleNotificationAsync({
       content: {
-        title: `Reminder: ${task.title}`,
-        body: task.details || `Time for ${task.title}`,
+        title: `Snoozed: ${taskTitle}`,
+        body: taskDetails || `Reminder for ${taskTitle}`,
         sound: 'default',
-        data: {
-          taskId,
-          occurrenceKey,
-          isSnoozed: true,
-        },
-        categoryIdentifier: REMINDER_CATEGORY_ID,
         priority: 'high',
         vibrate: [0, 250, 250, 250],
+        categoryIdentifier: TASK_REMINDER_CATEGORY,
       },
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DATE,
@@ -46,16 +36,9 @@ export async function snoozeNotification(
       },
     });
 
-    return notificationId;
+    showToast('success', `Snoozed for ${snoozeMinutes} minutes`);
   } catch (error) {
     console.error('Error snoozing notification:', error);
-    throw error;
+    showToast('error', 'Failed to snooze notification');
   }
-}
-
-/**
- * Get the snooze duration in minutes
- */
-export function getSnoozeDuration(): number {
-  return SNOOZE_DURATION_MINUTES;
 }

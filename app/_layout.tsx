@@ -1,9 +1,11 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import * as Notifications from 'expo-notifications';
 import { Stack } from 'expo-router';
 import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { ErrorBoundary } from './_components/ErrorBoundary';
+import { TaskProvider } from './_context/TaskContext';
 import { Colors, Radii } from './_styles/theme';
 import { registerNotificationCategories } from './_utils/notificationCategories';
 
@@ -61,24 +63,64 @@ export default function RootLayout() {
     registerNotificationCategories();
   }, []);
 
+  // Handle notification actions (Mark as Done, Snooze, etc.)
+  useEffect(() => {
+    const subscription = Notifications.addNotificationResponseReceivedListener(
+      async (response) => {
+        const { actionIdentifier, notification } = response;
+        const { taskId, occurrenceKey } = notification.request.content.data as {
+          taskId?: string;
+          occurrenceKey?: string;
+        };
+
+        // Handle Mark as Done action
+        if (actionIdentifier === 'MARK_DONE' && taskId && occurrenceKey) {
+          try {
+            const { acknowledgeOccurrence, getPersistentSchedule, deletePersistentSchedule } = await import('./_utils/storageUtils');
+            const { cancelTaskNotifications } = await import('./_utils/scheduleUtils');
+            const { showToast } = await import('./_utils/toastUtils');
+
+            // Mark this specific occurrence as done
+            await acknowledgeOccurrence(taskId, occurrenceKey);
+
+            // Cancel followup notifications for this occurrence
+            const ids = await getPersistentSchedule(taskId, occurrenceKey);
+            if (ids?.length) {
+              await cancelTaskNotifications(ids);
+              await deletePersistentSchedule(taskId, occurrenceKey);
+            }
+
+            showToast('success', 'Task marked as done');
+          } catch (error) {
+            console.error('Error marking task as done:', error);
+          }
+        }
+      }
+    );
+
+    return () => subscription.remove();
+  }, []);
+
   return (
     <ErrorBoundary>
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          animation: 'fade_from_bottom',
-          animationDuration: 250,
-          contentStyle: {
-            backgroundColor: Colors.bg,
-          },
-        }}
-      >
-        <Stack.Screen name="index" />
-        <Stack.Screen name="task-form" options={{ animation: 'slide_from_bottom' }} />
-        <Stack.Screen name="task-detail" options={{ animation: 'slide_from_right' }} />
-        <Stack.Screen name="upcoming" options={{ animation: 'slide_from_right' }} />
-      </Stack>
-      <Toast config={toastConfig} />
+      <TaskProvider>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            animation: 'fade_from_bottom',
+            animationDuration: 250,
+            contentStyle: {
+              backgroundColor: Colors.bg,
+            },
+          }}
+        >
+          <Stack.Screen name="index" />
+          <Stack.Screen name="task-form" options={{ animation: 'slide_from_bottom' }} />
+          <Stack.Screen name="task-detail" options={{ animation: 'slide_from_right' }} />
+          <Stack.Screen name="upcoming" options={{ animation: 'slide_from_right' }} />
+        </Stack>
+        <Toast config={toastConfig} />
+      </TaskProvider>
     </ErrorBoundary>
   );
 }

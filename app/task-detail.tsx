@@ -19,7 +19,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomTabs } from './_components/BottomTabs';
 import { ConfirmDialog } from './_components/ConfirmDialog';
 import { NotificationCalendar } from './_components/NotificationCalendar';
-import { useTaskStorage } from './_hooks/useTaskStorage';
+import { useTaskActions } from './_context/TaskContext';
 import { Colors, Radii, Shadows } from './_styles/theme';
 import { Task } from './_types/Task';
 import { navigateToTaskForm } from './_utils/navigationHelpers';
@@ -35,7 +35,7 @@ export default function TaskDetailScreen() {
   const insets = useSafeAreaInsets();
   const { taskId } = useLocalSearchParams<{ taskId: string }>();
   const [task, setTask] = useState<Task | null>(null);
-  const { deleteTask, fetchTaskById } = useTaskStorage();
+  const { deleteTask, fetchTaskById } = useTaskActions();
   const [activeTab, setActiveTab] = useState<'details' | 'upcoming'>('details');
   const [upcoming, setUpcoming] = useState<{ date: Date; key: string; label: string }[]>([]);
   const [ackMap, setAckMap] = useState<Record<string, boolean>>({});
@@ -141,7 +141,7 @@ export default function TaskDetailScreen() {
         // reschedule persistent followups for this occurrence (if in future)
         try {
           await schedulePersistentFollowupsForOccurrence(task, occKey);
-        } catch (e) {
+        } catch {
           showErrorToast('Failed to reschedule followups');
         }
         setAckMap((m) => ({ ...m, [occKey]: false }));
@@ -159,7 +159,7 @@ export default function TaskDetailScreen() {
         try { await Haptics.selectionAsync(); } catch {}
         showToast('success', 'Reminder acknowledged');
       }
-    } catch (e) {
+    } catch {
       showErrorToast('Failed to toggle acknowledgment');
     }
   };

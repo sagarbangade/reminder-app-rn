@@ -67,7 +67,7 @@ export async function scheduleTaskNotifications(task: Task): Promise<string[]> {
       case 'customTimes':
         // If task has explicit customDateTimes (one-off), schedule each at its exact date/time
         if (task.customDateTimes && task.customDateTimes.length > 0) {
-          const { REMINDER_CATEGORY_ID } = await import('./notificationCategories');
+          const { TASK_REMINDER_CATEGORY } = await import('./notificationCategories');
           for (const dtIso of task.customDateTimes) {
             try {
               const when = new Date(dtIso);
@@ -79,7 +79,7 @@ export async function scheduleTaskNotifications(task: Task): Promise<string[]> {
                     sound: 'default',
                     priority: 'high',
                     vibrate: [0, 250, 250, 250],
-                    categoryIdentifier: REMINDER_CATEGORY_ID,
+                    categoryIdentifier: TASK_REMINDER_CATEGORY,
                     data: {
                       taskId: task.id,
                       occurrenceKey: when.toISOString(),
@@ -202,7 +202,7 @@ async function scheduleDailyNotification(Notif: any, task: Task, time: string): 
   }
 
   // Import category ID
-  const { REMINDER_CATEGORY_ID } = await import('./notificationCategories');
+  const { TASK_REMINDER_CATEGORY } = await import('./notificationCategories');
 
   const notificationId = await Notif.scheduleNotificationAsync({
     content: {
@@ -211,7 +211,7 @@ async function scheduleDailyNotification(Notif: any, task: Task, time: string): 
       sound: 'default',
       priority: 'high',
       vibrate: [0, 250, 250, 250],
-      categoryIdentifier: REMINDER_CATEGORY_ID,
+      categoryIdentifier: TASK_REMINDER_CATEGORY,
       data: {
         taskId: task.id,
         occurrenceKey: nextOccurrence.toISOString(),
@@ -261,7 +261,7 @@ async function scheduleAlternateDaysForTimes(Notif: any, task: Task): Promise<st
       if (occ <= now) continue; // skip past occurrences
 
       try {
-        const { REMINDER_CATEGORY_ID } = await import('./notificationCategories');
+        const { TASK_REMINDER_CATEGORY } = await import('./notificationCategories');
         const id = await Notif.scheduleNotificationAsync({
           content: {
             title: `Reminder: ${task.title}`,
@@ -269,7 +269,7 @@ async function scheduleAlternateDaysForTimes(Notif: any, task: Task): Promise<st
             sound: 'default',
             priority: 'high',
             vibrate: [0, 250, 250, 250],
-            categoryIdentifier: REMINDER_CATEGORY_ID,
+            categoryIdentifier: TASK_REMINDER_CATEGORY,
             data: {
               taskId: task.id,
               occurrenceKey: occ.toISOString(),

@@ -4,9 +4,10 @@
 
 import * as Notifications from 'expo-notifications';
 
-export const REMINDER_CATEGORY_ID = 'reminder';
-export const SNOOZE_ACTION_ID = 'snooze';
-export const DISMISS_ACTION_ID = 'dismiss';
+export const TASK_REMINDER_CATEGORY = 'TASK_REMINDER';
+export const MARK_DONE_ACTION = 'MARK_DONE';
+export const SNOOZE_ACTION = 'SNOOZE';
+export const VIEW_ACTION = 'VIEW';
 
 /**
  * Register notification categories with actions
@@ -14,19 +15,26 @@ export const DISMISS_ACTION_ID = 'dismiss';
  */
 export async function registerNotificationCategories(): Promise<void> {
   try {
-    await Notifications.setNotificationCategoryAsync(REMINDER_CATEGORY_ID, [
+    await Notifications.setNotificationCategoryAsync(TASK_REMINDER_CATEGORY, [
       {
-        identifier: SNOOZE_ACTION_ID,
-        buttonTitle: 'Snooze 5 min',
+        identifier: MARK_DONE_ACTION,
+        buttonTitle: '✓ Mark as Done',
         options: {
           opensAppToForeground: false,
         },
       },
       {
-        identifier: DISMISS_ACTION_ID,
-        buttonTitle: 'Dismiss',
+        identifier: SNOOZE_ACTION,
+        buttonTitle: 'Snooze 10m',
         options: {
           opensAppToForeground: false,
+        },
+      },
+      {
+        identifier: VIEW_ACTION,
+        buttonTitle: 'View',
+        options: {
+          opensAppToForeground: true,
         },
       },
     ]);

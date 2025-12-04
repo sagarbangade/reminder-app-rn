@@ -1,15 +1,13 @@
 /**
- * AsyncStorage utility functions for persisting tasks and notification IDs
+ * Storage utility functions for persisting tasks and notification IDs
+ * Using MMKV for 30x faster performance than AsyncStorage
  */
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NotificationSchedule, Task } from '../_types/Task';
-
-const TASKS_KEY = '@reminder_tasks';
-const NOTIFICATIONS_KEY = '@reminder_notifications';
+import { getItem, setItem, STORAGE_KEYS } from './mmkvStorage';
 
 /**
- * Save a task to AsyncStorage
+ * Save a task to storage
  */
 export async function saveTask(task: Task): Promise<void> {
   try {
@@ -22,7 +20,7 @@ export async function saveTask(task: Task): Promise<void> {
       tasks.push(task);
     }
 
-    await AsyncStorage.setItem(TASKS_KEY, JSON.stringify(tasks));
+    setItem(STORAGE_KEYS.TASKS, tasks);
   } catch (error) {
     console.error('Error saving task:', error);
     throw error;
@@ -30,12 +28,11 @@ export async function saveTask(task: Task): Promise<void> {
 }
 
 /**
- * Get all tasks from AsyncStorage
+ * Get all tasks from storage
  */
 export async function getAllTasks(): Promise<Task[]> {
   try {
-    const data = await AsyncStorage.getItem(TASKS_KEY);
-    return data ? JSON.parse(data) : [];
+    return getItem<Task[]>(STORAGE_KEYS.TASKS) || [];
   } catch (error) {
     console.error('Error getting tasks:', error);
     return [];
@@ -56,17 +53,13 @@ export async function getTaskById(id: string): Promise<Task | null> {
 }
 
 /**
- * Delete a task from AsyncStorage
+ * Delete a task from storage
  */
 export async function deleteTask(id: string): Promise<void> {
   try {
-    // Delete task from storage
     const tasks = await getAllTasks();
-    // Current tasks count
     const filtered = tasks.filter((t) => t.id !== id);
-    // Filtered tasks count
-    await AsyncStorage.setItem(TASKS_KEY, JSON.stringify(filtered));
-    // Task deleted from AsyncStorage
+    setItem(STORAGE_KEYS.TASKS, filtered);
   } catch (error) {
     console.error('Error deleting task:', error);
     throw error;
@@ -87,7 +80,7 @@ export async function saveNotificationSchedule(schedule: NotificationSchedule): 
       schedules.push(schedule);
     }
 
-    await AsyncStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(schedules));
+    setItem(STORAGE_KEYS.NOTIFICATIONS, schedules);
   } catch (error) {
     console.error('Error saving notification schedule:', error);
     throw error;
@@ -113,8 +106,7 @@ export async function getNotificationSchedule(taskId: string): Promise<string[]>
  */
 export async function getAllNotificationSchedules(): Promise<NotificationSchedule[]> {
   try {
-    const data = await AsyncStorage.getItem(NOTIFICATIONS_KEY);
-    return data ? JSON.parse(data) : [];
+    return getItem<NotificationSchedule[]>(STORAGE_KEYS.NOTIFICATIONS) || [];
   } catch (error) {
     console.error('Error getting all notification schedules:', error);
     return [];
@@ -128,7 +120,7 @@ export async function deleteNotificationSchedule(taskId: string): Promise<void> 
   try {
     const schedules = await getAllNotificationSchedules();
     const filtered = schedules.filter((s) => s.taskId !== taskId);
-    await AsyncStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(filtered));
+    setItem(STORAGE_KEYS.NOTIFICATIONS, filtered);
   } catch (error) {
     console.error('Error deleting notification schedule:', error);
     throw error;
@@ -136,7 +128,6 @@ export async function deleteNotificationSchedule(taskId: string): Promise<void> 
 }
 
 // Persistent per-occurrence schedules (for repeated reminders until acknowledged)
-const PERSISTENT_KEY = '@reminder_persistent';
 
 export async function savePersistentSchedule(taskId: string, occurrenceKey: string, notificationIds: string[]): Promise<void> {
   try {
@@ -147,7 +138,7 @@ export async function savePersistentSchedule(taskId: string, occurrenceKey: stri
     } else {
       all.push({ taskId, occurrenceKey, notificationIds });
     }
-    await AsyncStorage.setItem(PERSISTENT_KEY, JSON.stringify(all));
+    setItem(STORAGE_KEYS.PERSISTENT, all);
   } catch (error) {
     console.error('Error saving persistent schedule:', error);
     throw error;
@@ -169,7 +160,7 @@ export async function deletePersistentSchedule(taskId: string, occurrenceKey: st
   try {
     const all = await getAllPersistentSchedules();
     const filtered = all.filter((s) => !(s.taskId === taskId && s.occurrenceKey === occurrenceKey));
-    await AsyncStorage.setItem(PERSISTENT_KEY, JSON.stringify(filtered));
+    setItem(STORAGE_KEYS.PERSISTENT, filtered);
   } catch (error) {
     console.error('Error deleting persistent schedule:', error);
     throw error;
@@ -178,8 +169,7 @@ export async function deletePersistentSchedule(taskId: string, occurrenceKey: st
 
 export async function getAllPersistentSchedules(): Promise<{ taskId: string; occurrenceKey: string; notificationIds: string[] }[]> {
   try {
-    const data = await AsyncStorage.getItem(PERSISTENT_KEY);
-    return data ? JSON.parse(data) : [];
+    return getItem<{ taskId: string; occurrenceKey: string; notificationIds: string[] }[]>(STORAGE_KEYS.PERSISTENT) || [];
   } catch (error) {
     console.error('Error getting all persistent schedules:', error);
     return [];
@@ -187,7 +177,6 @@ export async function getAllPersistentSchedules(): Promise<{ taskId: string; occ
 }
 
 // Acknowledged occurrences tracking
-const ACK_KEY = '@reminder_ack';
 
 export async function acknowledgeOccurrence(taskId: string, occurrenceKey: string): Promise<void> {
   try {
@@ -195,7 +184,7 @@ export async function acknowledgeOccurrence(taskId: string, occurrenceKey: strin
     const exists = all.find((a) => a.taskId === taskId && a.occurrenceKey === occurrenceKey);
     if (!exists) {
       all.push({ taskId, occurrenceKey });
-      await AsyncStorage.setItem(ACK_KEY, JSON.stringify(all));
+      setItem(STORAGE_KEYS.ACKNOWLEDGED, all);
     }
   } catch (error) {
     console.error('Error acknowledging occurrence:', error);
@@ -215,8 +204,7 @@ export async function isOccurrenceAcknowledged(taskId: string, occurrenceKey: st
 
 export async function getAcknowledgedOccurrences(): Promise<{ taskId: string; occurrenceKey: string }[]> {
   try {
-    const data = await AsyncStorage.getItem(ACK_KEY);
-    return data ? JSON.parse(data) : [];
+    return getItem<{ taskId: string; occurrenceKey: string }[]>(STORAGE_KEYS.ACKNOWLEDGED) || [];
   } catch (error) {
     console.error('Error getting acknowledged occurrences:', error);
     return [];
@@ -227,7 +215,7 @@ export async function unacknowledgeOccurrence(taskId: string, occurrenceKey: str
   try {
     const all = await getAcknowledgedOccurrences();
     const filtered = all.filter((a) => !(a.taskId === taskId && a.occurrenceKey === occurrenceKey));
-    await AsyncStorage.setItem(ACK_KEY, JSON.stringify(filtered));
+    setItem(STORAGE_KEYS.ACKNOWLEDGED, filtered);
   } catch (error) {
     console.error('Error unacknowledging occurrence:', error);
     throw error;
@@ -239,7 +227,8 @@ export async function unacknowledgeOccurrence(taskId: string, occurrenceKey: str
  */
 export async function clearAllData(): Promise<void> {
   try {
-    await AsyncStorage.multiRemove([TASKS_KEY, NOTIFICATIONS_KEY]);
+    const { clearAll } = await import('./mmkvStorage');
+    clearAll();
   } catch (error) {
     console.error('Error clearing all data:', error);
     throw error;

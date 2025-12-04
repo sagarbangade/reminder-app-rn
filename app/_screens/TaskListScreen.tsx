@@ -3,12 +3,11 @@
  */
 
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import {
     FlatList,
     Pressable,
@@ -19,7 +18,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomTabs } from '../_components/BottomTabs';
 import { TaskCard } from '../_components/TaskCard';
-import { useTaskStorage } from '../_hooks/useTaskStorage';
+import { useTaskActions, useTasks, useTasksLoading } from '../_context/TaskContext';
 import { Colors, Radii, Shadows } from '../_styles/theme';
 import { navigateToTaskDetail, navigateToTaskForm } from '../_utils/navigationHelpers';
 import { getUpcomingCountForTask } from '../_utils/scheduleUtils';
@@ -31,14 +30,16 @@ import { showErrorToast, showToast } from '../_utils/toastUtils';
 export const TaskListScreen: React.FC = () => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { tasks, loading, deleteTask, loadTasks } = useTaskStorage();
   
-  // Reload tasks when screen is focused
-  useFocusEffect(
-    useCallback(() => {
-      loadTasks();
-    }, [loadTasks])
-  );
+  // Use TaskContext for global state
+  const tasks = useTasks();
+  const loading = useTasksLoading();
+  const { loadTasks, deleteTask } = useTaskActions();
+  
+  // Load tasks on mount
+  useEffect(() => {
+    loadTasks();
+  }, [loadTasks]);
 
   // Optimize counts calculation with useMemo
   const counts = useMemo(() => {
@@ -55,42 +56,40 @@ export const TaskListScreen: React.FC = () => {
   }, [tasks]);
 
   /**
-   * Handle task deletion
+   * Handle task deletion with optimistic update
    */
-  const handleDeleteTask = async (taskId: string) => {
+  const handleDeleteTask = useCallback(async (taskId: string) => {
     try {
       await deleteTask(taskId);
       try { await Haptics.selectionAsync(); } catch {}
       showToast('success', 'Task deleted');
-      // refresh list
-      await loadTasks();
     } catch {
       showErrorToast('Failed to delete task');
+      // Reload tasks on error to revert optimistic update
+      await loadTasks();
     }
-  };
+  }, [deleteTask, loadTasks]);
 
   /**
    * Navigate to edit screen
    */
-  const handleEditTask = (taskId: string) => {
+  const handleEditTask = useCallback((taskId: string) => {
     navigateToTaskForm(router, taskId);
     try { Haptics.selectionAsync(); } catch {}
-    showToast('info', 'Opening editor...');
-  };
+  }, [router]);
 
-  const handleOpenDetail = (taskId: string) => {
+  const handleOpenDetail = useCallback((taskId: string) => {
     navigateToTaskDetail(router, taskId);
-  };
+  }, [router]);
 
   /**
    * Navigate to add new task screen
    */
-  const handleAddTask = () => {
+  const handleAddTask = useCallback(() => {
     navigateToTaskForm(router);
-  };
+  }, [router]);
 
-  // handleOpenUpcoming removed — bottom tabs handle navigation now
-
+  // Show loading state
   if (loading) {
     return (
       <View style={styles.container}>
@@ -105,18 +104,16 @@ export const TaskListScreen: React.FC = () => {
   return (
     <View style={[styles.container, { paddingBottom: insets.bottom }]}>
       <StatusBar style="light" />
-      {/* Header with Gradient */}
+      {/* Minimal Professional Header - No Title */}
       <LinearGradient
         colors={[Colors.headerGradientStart, Colors.headerGradientEnd]}
         style={[styles.header, { paddingTop: insets.top + 16 }]}
       >
-        <View>
-          <Text style={styles.title}>Reminder App</Text>
-          <Text style={styles.subtitle}>Stay on track with smart reminders</Text>
+        <View style={styles.headerContent}>
+          <Pressable onPress={handleAddTask} style={styles.headerAction}>
+            <MaterialCommunityIcons name="plus" size={20} color={Colors.card} />
+          </Pressable>
         </View>
-        <Pressable onPress={handleAddTask} style={styles.headerAction}>
-          <MaterialCommunityIcons name="plus" size={20} color={Colors.card} />
-        </Pressable>
       </LinearGradient>
 
       {/* Task List */}
@@ -145,17 +142,18 @@ export const TaskListScreen: React.FC = () => {
           scrollEnabled
         />
       )}
+      
       <Pressable
-          style={styles.floatingButtonContainer}
-          onPress={handleAddTask}
-          accessibilityRole="button"
-          accessibilityLabel="Add new task"
-          accessibilityHint="Opens the form to create a new reminder"
-        >
-          <View style={styles.floatingButton}>
-            <MaterialCommunityIcons name="plus" size={24} color={Colors.card} />
-          </View>
-        </Pressable>
+        style={styles.floatingButtonContainer}
+        onPress={handleAddTask}
+        accessibilityRole="button"
+        accessibilityLabel="Add new task"
+        accessibilityHint="Opens the form to create a new reminder"
+      >
+        <View style={styles.floatingButton}>
+          <MaterialCommunityIcons name="plus" size={24} color={Colors.card} />
+        </View>
+      </Pressable>
 
       {/* Persistent bottom tabs */}
       <BottomTabs />
@@ -169,15 +167,14 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.bg,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     paddingHorizontal: 24,
-    paddingVertical: 24,
-    borderBottomLeftRadius: 0,
-    borderBottomRightRadius: 0,
-    marginBottom: 0,
+    paddingVertical: 16,
     ...Shadows.md,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
   },
   title: {
     fontSize: 32,

@@ -7,7 +7,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TaskForm } from './_components/TaskForm';
-import { useTaskStorage } from './_hooks/useTaskStorage';
+import { useTaskActions } from './_context/TaskContext';
 import { Colors } from './_styles/theme';
 import { Task } from './_types/Task';
 import { showErrorToast, showSuccessToast } from './_utils/toastUtils';
@@ -19,7 +19,7 @@ export default function TaskFormScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { taskId } = useLocalSearchParams<{ taskId?: string }>();
-  const { saveTask, fetchTaskById } = useTaskStorage();
+  const { saveTask, fetchTaskById } = useTaskActions();
   const [task, setTask] = useState<Task | null>(null);
 
   /**
