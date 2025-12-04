@@ -4,6 +4,10 @@
 
 import * as Notifications from 'expo-notifications';
 import { useEffect, useRef } from 'react';
+import { DISMISS_ACTION_ID, SNOOZE_ACTION_ID } from '../_utils/notificationCategories';
+import { getSnoozeDuration, snoozeNotification } from '../_utils/snoozeUtils';
+import { getTaskById } from '../_utils/storageUtils';
+import { showToast } from '../_utils/toastUtils';
 
 /**
  * Request notification permissions and set up listeners
@@ -20,9 +24,11 @@ export function useNotifications(onNotificationReceived?: (notification: Notific
     Notifications.setNotificationHandler({
       handleNotification: async () => ({
         shouldShowAlert: true,
+        shouldShowBanner: true,
+        shouldShowList: true,
         shouldPlaySound: true,
         shouldSetBadge: true,
-      } as any),
+      }),
     });
 
     // Listen for notifications when app is in foreground
@@ -34,8 +40,29 @@ export function useNotifications(onNotificationReceived?: (notification: Notific
     });
 
     // Listen for notification responses (user interaction)
-    responseListener.current = Notifications.addNotificationResponseReceivedListener((response) => {
-      // Notification response received
+    responseListener.current = Notifications.addNotificationResponseReceivedListener(async (response) => {
+      const { actionIdentifier, notification } = response;
+      const { taskId, occurrenceKey } = notification.request.content.data as {
+        taskId?: string;
+        occurrenceKey?: string;
+      };
+
+      // Handle snooze action
+      if (actionIdentifier === SNOOZE_ACTION_ID && taskId && occurrenceKey) {
+        try {
+          const task = await getTaskById(taskId);
+          if (task) {
+            await snoozeNotification(taskId, occurrenceKey, task);
+            showToast('info', `Snoozed for ${getSnoozeDuration()} minutes`);
+          }
+        } catch (error) {
+          console.error('Error handling snooze:', error);
+          showToast('error', 'Failed to snooze notification');
+        }
+      } else if (actionIdentifier === DISMISS_ACTION_ID) {
+        // Dismiss action - notification is already dismissed
+        showToast('success', 'Reminder dismissed');
+      }
     });
 
     // Cleanup

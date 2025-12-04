@@ -1,12 +1,13 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
  
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomTabs } from './_components/BottomTabs';
-import { Colors, Radii } from './_styles/theme';
+import { Colors, Radii, Shadows } from './_styles/theme';
 import { Task } from './_types/Task';
 import { cancelTaskNotifications, schedulePersistentFollowupsForOccurrence } from './_utils/scheduleUtils';
 import { acknowledgeOccurrence, deletePersistentSchedule, getAllTasks, getPersistentSchedule, isOccurrenceAcknowledged, unacknowledgeOccurrence } from './_utils/storageUtils';
@@ -126,7 +127,8 @@ export default function UpcomingScreen() {
   }, {} as Record<string, typeof occurrences>);
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}> 
+    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+      <StatusBar style="dark" />
       {/* Go Back button */}
       <View style={styles.topBar}>
         <Pressable onPress={() => router.back()} style={styles.goBackBtn}>
@@ -178,7 +180,7 @@ export default function UpcomingScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.card,
   },
   topBar: {
     flexDirection: 'row',
@@ -194,7 +196,7 @@ const styles = StyleSheet.create({
   header: {
     fontSize: 22,
     fontWeight: '800',
-    color: '#7C3AED',
+    color: Colors.primary,
     marginTop: 18,
     marginBottom: 12,
     textAlign: 'center',
@@ -206,7 +208,7 @@ const styles = StyleSheet.create({
   },
   empty: {
     fontSize: 16,
-    color: '#999',
+    color: Colors.textMuted,
     textAlign: 'center',
     marginTop: 40,
   },
@@ -215,11 +217,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.card,
     borderRadius: Radii.md,
     padding: 14,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
+    ...Shadows.sm,
   },
   taskTitle: {
     fontSize: 18,
@@ -232,12 +230,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#EEE',
+    borderBottomColor: Colors.border,
   },
   occLabel: {
     flex: 1,
     fontSize: 15,
-    color: '#222',
+    color: Colors.textPrimary,
   },
   ackButton: {
     width: 44,

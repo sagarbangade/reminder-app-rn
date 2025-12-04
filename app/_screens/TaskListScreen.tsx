@@ -5,7 +5,9 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useMemo } from 'react';
 import {
     FlatList,
@@ -18,7 +20,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomTabs } from '../_components/BottomTabs';
 import { TaskCard } from '../_components/TaskCard';
 import { useTaskStorage } from '../_hooks/useTaskStorage';
-import { Colors, Radii } from '../_styles/theme';
+import { Colors, Radii, Shadows } from '../_styles/theme';
 import { navigateToTaskDetail, navigateToTaskForm } from '../_utils/navigationHelpers';
 import { getUpcomingCountForTask } from '../_utils/scheduleUtils';
 import { showErrorToast, showToast } from '../_utils/toastUtils';
@@ -91,7 +93,8 @@ export const TaskListScreen: React.FC = () => {
 
   if (loading) {
     return (
-      <View style={[styles.container, { paddingTop: insets.top }]}>
+      <View style={styles.container}>
+        <StatusBar style="light" />
         <View style={styles.centerContent}>
           <Text style={styles.loadingText}>Loading tasks...</Text>
         </View>
@@ -100,22 +103,26 @@ export const TaskListScreen: React.FC = () => {
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-      {/* Header */}
-      <View style={[styles.header, styles.headerElevated]}>
+    <View style={[styles.container, { paddingBottom: insets.bottom }]}>
+      <StatusBar style="light" />
+      {/* Header with Gradient */}
+      <LinearGradient
+        colors={[Colors.headerGradientStart, Colors.headerGradientEnd]}
+        style={[styles.header, { paddingTop: insets.top + 16 }]}
+      >
         <View>
           <Text style={styles.title}>Reminder App</Text>
           <Text style={styles.subtitle}>Stay on track with smart reminders</Text>
         </View>
         <Pressable onPress={handleAddTask} style={styles.headerAction}>
-          <MaterialCommunityIcons name="plus" size={20} color="#FFF" />
+          <MaterialCommunityIcons name="plus" size={20} color={Colors.card} />
         </Pressable>
-      </View>
+      </LinearGradient>
 
       {/* Task List */}
       {tasks.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <MaterialCommunityIcons name="pill" size={64} color="#CCC" />
+          <MaterialCommunityIcons name="pill" size={64} color={Colors.disabled} />
           <Text style={styles.emptyTitle}>No reminders yet</Text>
           <Text style={styles.emptySubtitle}>
             Tap the + button to create your first reminder
@@ -146,7 +153,7 @@ export const TaskListScreen: React.FC = () => {
           accessibilityHint="Opens the form to create a new reminder"
         >
           <View style={styles.floatingButton}>
-            <MaterialCommunityIcons name="plus" size={24} color="#FFF" />
+            <MaterialCommunityIcons name="plus" size={24} color={Colors.card} />
           </View>
         </Pressable>
 
@@ -167,25 +174,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 24,
     paddingVertical: 24,
-    backgroundColor: Colors.primary,
     borderBottomLeftRadius: 0,
     borderBottomRightRadius: 0,
     marginBottom: 0,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    ...Shadows.md,
   },
   title: {
     fontSize: 32,
     fontWeight: '900',
-    color: '#FFF',
+    color: Colors.card,
     letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: 13,
-    color: 'rgba(255,255,255,0.85)',
+    color: 'rgba(255, 255, 255, 0.85)',
     marginTop: 6,
     fontWeight: '500',
     letterSpacing: 0.3,
@@ -203,11 +205,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.neon,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: Colors.neon,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    elevation: 6,
+    ...Shadows.md,
   },
   listContent: {
     paddingHorizontal: 16,
@@ -252,14 +250,10 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#0A84FF',
+    backgroundColor: Colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    ...Shadows.lg,
   },
   bottomTabs: {
     position: 'absolute',

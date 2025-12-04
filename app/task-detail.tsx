@@ -5,6 +5,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
     Pressable,
@@ -19,7 +20,7 @@ import { BottomTabs } from './_components/BottomTabs';
 import { ConfirmDialog } from './_components/ConfirmDialog';
 import { NotificationCalendar } from './_components/NotificationCalendar';
 import { useTaskStorage } from './_hooks/useTaskStorage';
-import { Colors, Radii } from './_styles/theme';
+import { Colors, Radii, Shadows } from './_styles/theme';
 import { Task } from './_types/Task';
 import { navigateToTaskForm } from './_utils/navigationHelpers';
 import { cancelTaskNotifications, schedulePersistentFollowupsForOccurrence } from './_utils/scheduleUtils';
@@ -219,14 +220,18 @@ export default function TaskDetailScreen() {
 
   if (!task) {
     return (
-      <View style={[styles.container, { paddingTop: insets.top }]}>
-        <Text>Loading...</Text>
+      <View style={styles.container}>
+        <StatusBar style="dark" />
+        <View style={styles.centerContent}>
+          <Text style={styles.loadingText}>Loading...</Text>
+        </View>
       </View>
     );
   }
 
   return (
     <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+      <StatusBar style="dark" />
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} style={styles.goBackBtn}>
           <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
@@ -354,7 +359,16 @@ export default function TaskDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.card,
+  },
+  centerContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 16,
+    color: Colors.textMuted,
   },
   header: {
     flexDirection: 'row',
@@ -363,7 +377,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: Colors.border,
   },
   goBackBtn: {
     marginRight: 8,
@@ -383,12 +397,12 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#666',
+    color: Colors.textSecondary,
     marginBottom: 8,
   },
   value: {
     fontSize: 16,
-    color: '#000',
+    color: Colors.textPrimary,
     lineHeight: 24,
   },
   buttonContainer: {
@@ -403,8 +417,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: Radii.md,
     gap: 8,
+    ...Shadows.sm,
   },
   editButton: {
     backgroundColor: '#007AFF',
@@ -413,22 +428,22 @@ const styles = StyleSheet.create({
     backgroundColor: '#FF3B30',
   },
   buttonText: {
-    color: '#fff',
+    color: Colors.card,
     fontSize: 16,
     fontWeight: '600',
   },
   tabRow: {
     flexDirection: 'row',
     marginBottom: 12,
-    backgroundColor: '#FFF',
-    borderRadius: 8,
+    backgroundColor: Colors.card,
+    borderRadius: Radii.md,
     overflow: 'hidden',
   },
   tabButton: {
     flex: 1,
     paddingVertical: 10,
     alignItems: 'center',
-    backgroundColor: '#F6F6F6',
+    backgroundColor: Colors.bgLight,
   },
   tabActive: {
     backgroundColor: '#7C3AED',
@@ -439,11 +454,11 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   tabText: {
-    color: '#666',
+    color: Colors.textSecondary,
     fontWeight: '600',
   },
   tabTextActive: {
-    color: '#FFF',
+    color: Colors.card,
   },
   upcomingRow: {
     flexDirection: 'row',

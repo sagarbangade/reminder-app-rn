@@ -67,6 +67,7 @@ export async function scheduleTaskNotifications(task: Task): Promise<string[]> {
       case 'customTimes':
         // If task has explicit customDateTimes (one-off), schedule each at its exact date/time
         if (task.customDateTimes && task.customDateTimes.length > 0) {
+          const { REMINDER_CATEGORY_ID } = await import('./notificationCategories');
           for (const dtIso of task.customDateTimes) {
             try {
               const when = new Date(dtIso);
@@ -77,12 +78,21 @@ export async function scheduleTaskNotifications(task: Task): Promise<string[]> {
                     body: task.details || `Time for ${task.title}`,
                     sound: 'default',
                     priority: 'high',
+                    vibrate: [0, 250, 250, 250],
+                    categoryIdentifier: REMINDER_CATEGORY_ID,
+                    data: {
+                      taskId: task.id,
+                      occurrenceKey: when.toISOString(),
+                    },
                     android: {
                       vibrate: [0, 250, 250, 250],
                       priority: 'high',
                     },
                   },
-                  trigger: when,
+                  trigger: {
+                    type: Notif.SchedulableTriggerInputTypes.DATE,
+                    date: when,
+                  },
                 });
                 notificationIds.push(id);
                 // schedule followups for this exact occurrence
@@ -178,12 +188,21 @@ export async function schedulePersistentFollowupsForOccurrence(task: Task, occIs
  * Schedule a daily notification at a specific time
  */
 async function scheduleDailyNotification(Notif: any, task: Task, time: string): Promise<string> {
-  // Create trigger for daily notification
-  // Using a 24-hour interval for daily reminders
-  const trigger: any = {
-    type: Notif.SchedulableTriggerInputTypes.TIME_INTERVAL,
-    seconds: 24 * 60 * 60, // Daily
-  };
+  // Parse the time string (HH:MM)
+  const [hours, minutes] = time.split(':').map(v => parseInt(v, 10));
+  
+  // Calculate the next occurrence of this time
+  const now = new Date();
+  const nextOccurrence = new Date();
+  nextOccurrence.setHours(hours, minutes, 0, 0);
+  
+  // If the time has already passed today, schedule for tomorrow
+  if (nextOccurrence <= now) {
+    nextOccurrence.setDate(nextOccurrence.getDate() + 1);
+  }
+
+  // Import category ID
+  const { REMINDER_CATEGORY_ID } = await import('./notificationCategories');
 
   const notificationId = await Notif.scheduleNotificationAsync({
     content: {
@@ -191,12 +210,22 @@ async function scheduleDailyNotification(Notif: any, task: Task, time: string): 
       body: task.details || `Time for ${task.title}`,
       sound: 'default',
       priority: 'high',
+      vibrate: [0, 250, 250, 250],
+      categoryIdentifier: REMINDER_CATEGORY_ID,
+      data: {
+        taskId: task.id,
+        occurrenceKey: nextOccurrence.toISOString(),
+      },
       android: {
         vibrate: [0, 250, 250, 250],
         priority: 'high',
       },
     },
-    trigger,
+    trigger: {
+      type: Notif.SchedulableTriggerInputTypes.DAILY,
+      hour: hours,
+      minute: minutes,
+    },
   });
 
   return notificationId;
@@ -232,18 +261,28 @@ async function scheduleAlternateDaysForTimes(Notif: any, task: Task): Promise<st
       if (occ <= now) continue; // skip past occurrences
 
       try {
+        const { REMINDER_CATEGORY_ID } = await import('./notificationCategories');
         const id = await Notif.scheduleNotificationAsync({
           content: {
             title: `Reminder: ${task.title}`,
             body: task.details || `Time for ${task.title}`,
             sound: 'default',
             priority: 'high',
+            vibrate: [0, 250, 250, 250],
+            categoryIdentifier: REMINDER_CATEGORY_ID,
+            data: {
+              taskId: task.id,
+              occurrenceKey: occ.toISOString(),
+            },
             android: {
               vibrate: [0, 250, 250, 250],
               priority: 'high',
             },
           },
-          trigger: occ,
+          trigger: {
+            type: Notif.SchedulableTriggerInputTypes.DATE,
+            date: occ,
+          },
         });
         notificationIds.push(id);
         // Schedule follow-up persistent reminders every 5 minutes for next 6 hours

@@ -5,6 +5,7 @@ import { Animated, StyleSheet, Text, View } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { ErrorBoundary } from './_components/ErrorBoundary';
 import { Colors, Radii } from './_styles/theme';
+import { registerNotificationCategories } from './_utils/notificationCategories';
 
 const AnimatedView = Animated.View;
 
@@ -55,19 +56,27 @@ const toastConfig: any = {
 };
 
 export default function RootLayout() {
+  // Register notification categories on app startup
+  useEffect(() => {
+    registerNotificationCategories();
+  }, []);
+
   return (
     <ErrorBoundary>
       <Stack
         screenOptions={{
           headerShown: false,
+          animation: 'fade_from_bottom',
+          animationDuration: 250,
           contentStyle: {
-            backgroundColor: 'transparent',
+            backgroundColor: Colors.bg,
           },
         }}
       >
         <Stack.Screen name="index" />
-        <Stack.Screen name="task-form" />
-        <Stack.Screen name="task-detail" />
+        <Stack.Screen name="task-form" options={{ animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="task-detail" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="upcoming" options={{ animation: 'slide_from_right' }} />
       </Stack>
       <Toast config={toastConfig} />
     </ErrorBoundary>
