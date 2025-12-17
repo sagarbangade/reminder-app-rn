@@ -15,6 +15,8 @@ export interface Task {
   customDateTimes?: string[];
   // For alternateDays: every N days (e.g., 2 for every 2 days)
   alternateInterval: number;
+  // For alternateDays: optional start date for N-day calculation (defaults to createdAt)
+  startDate?: number;
   // When the task was created (for calculating alternate days)
   createdAt: number;
   // Last reminder time (for tracking alternate day logic)

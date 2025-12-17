@@ -245,7 +245,8 @@ async function scheduleAlternateDaysForTimes(Notif: any, task: Task): Promise<st
   const horizonDays = 365; // schedule for next year
   const interval = Math.max(1, task.alternateInterval || 1);
 
-  const createdDate = new Date(task.createdAt);
+  // Use startDate if available, otherwise fall back to createdAt
+  const baseDate = new Date(task.startDate || task.createdAt);
   const now = new Date();
 
   // For each time of day, generate occurrences starting from createdDate
@@ -254,8 +255,8 @@ async function scheduleAlternateDaysForTimes(Notif: any, task: Task): Promise<st
 
     // iterate over occurrences spaced by `interval` days
     for (let offset = 0; offset <= horizonDays; offset += interval) {
-      const occ = new Date(createdDate);
-      occ.setDate(createdDate.getDate() + offset);
+      const occ = new Date(baseDate);
+      occ.setDate(baseDate.getDate() + offset);
       occ.setHours(isNaN(hh) ? 9 : hh, isNaN(mm) ? 0 : mm, 0, 0);
 
       if (occ <= now) continue; // skip past occurrences
@@ -401,7 +402,9 @@ export function getUpcomingCountForTask(task: import('../_types/Task').Task): nu
         occ.setHours(isNaN(hh) ? 9 : hh, isNaN(mm) ? 0 : mm, 0, 0);
         if (occ >= now && occ <= end) {
           if (isAlternate) {
-            const diffDays = Math.floor((occ.getTime() - new Date(task.createdAt).setHours(0,0,0,0)) / (24*60*60*1000));
+            // Use startDate if available, otherwise fall back to createdAt
+            const baseDate = task.startDate || task.createdAt;
+            const diffDays = Math.floor((occ.getTime() - new Date(baseDate).setHours(0,0,0,0)) / (24*60*60*1000));
             if (diffDays % Math.max(1, task.alternateInterval || 1) !== 0) continue;
           }
           count++;

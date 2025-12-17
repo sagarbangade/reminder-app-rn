@@ -153,6 +153,9 @@ export const TaskForm: React.FC<TaskFormProps> = ({ initialTask, onSave, onCance
   const [showDatePickerIndex, setShowDatePickerIndex] = useState<number | null>(null);
   const [tempSelectedDate, setTempSelectedDate] = useState<Date | null>(null);
   const [alternateInterval, setAlternateInterval] = useState('2');
+  // For alternateDays: start date for N-day calculation
+  const [startDate, setStartDate] = useState<Date>(new Date());
+  const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showSchedulePicker, setShowSchedulePicker] = useState(false);
 
@@ -192,6 +195,12 @@ export const TaskForm: React.FC<TaskFormProps> = ({ initialTask, onSave, onCance
         setCustomDates(uiT.map(() => null));
       }
       setAlternateInterval(initialTask.alternateInterval.toString());
+      // Load startDate if present, otherwise use createdAt or current date
+      if (initialTask.startDate) {
+        setStartDate(new Date(initialTask.startDate));
+      } else if (initialTask.createdAt) {
+        setStartDate(new Date(initialTask.createdAt));
+      }
     }
   }, [initialTask]);
 
@@ -272,6 +281,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({ initialTask, onSave, onCance
         scheduleType,
         timesInDay: convertedTimes,
         alternateInterval: parseInt(alternateInterval),
+        startDate: scheduleType === 'alternateDays' ? startDate.getTime() : undefined,
         customDateTimes: scheduleType === 'customTimes' ? uiTimes.map((t, i) => {
           const date = customDates[i] ? new Date(customDates[i] as Date) : new Date();
           const [hh, mm] = convertTo24Hour(t.trim(), meridiems[i] || 'AM').split(':').map((v) => parseInt(v, 10));
@@ -527,17 +537,95 @@ export const TaskForm: React.FC<TaskFormProps> = ({ initialTask, onSave, onCance
 
       {/* Alternate Days Configuration */}
       {scheduleType === 'alternateDays' && (
-        <View style={styles.section}>
-          <Text style={styles.label}>Interval (days) *</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="e.g., 2 (for every 2 days)"
-            value={alternateInterval}
-            onChangeText={setAlternateInterval}
-            keyboardType="number-pad"
-            editable={!isSaving}
-          />
-        </View>
+        <>
+          <View style={styles.section}>
+            <Text style={styles.label}>Interval (days) *</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g., 2 (for every 2 days)"
+              value={alternateInterval}
+              onChangeText={setAlternateInterval}
+              keyboardType="number-pad"
+              editable={!isSaving}
+            />
+          </View>
+          <View style={styles.section}>
+            <Text style={styles.label}>Start Date</Text>
+            <Text style={styles.helperText}>The N-day interval will be calculated from this date</Text>
+            {Platform.OS === 'web' ? (
+              <View style={webDatePickerStyles.webContainer}>
+                <input
+                  type="date"
+                  value={`${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`}
+                  onChange={(e: any) => {
+                    if (e.target.value) {
+                      const [year, month, day] = e.target.value.split('-');
+                      setStartDate(new Date(parseInt(year), parseInt(month) - 1, parseInt(day)));
+                    }
+                  }}
+                  disabled={isSaving}
+                  style={{
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid #E0E0E0',
+                    fontSize: '14px',
+                    fontFamily: 'system-ui, -apple-system, sans-serif',
+                    cursor: isSaving ? 'not-allowed' : 'pointer',
+                    opacity: isSaving ? 0.6 : 1,
+                    width: '100%',
+                    maxWidth: '200px',
+                    boxSizing: 'border-box',
+                  } as any}
+                />
+              </View>
+            ) : (
+              <>
+                <Pressable
+                  onPress={() => setShowStartDatePicker(true)}
+                  disabled={isSaving}
+                  style={styles.scheduleTypeButton}
+                >
+                  <Text style={styles.scheduleTypeButtonText}>
+                    {startDate.toLocaleDateString()}
+                  </Text>
+                  <MaterialCommunityIcons name="calendar" size={20} color="#0A84FF" />
+                </Pressable>
+                {showStartDatePicker && (
+                  <Modal
+                    visible={showStartDatePicker}
+                    transparent
+                    animationType="slide"
+                    onRequestClose={() => setShowStartDatePicker(false)}
+                  >
+                    <View style={styles.datePickerModal}>
+                      <View style={styles.datePickerContainer}>
+                        <View style={styles.datePickerHeader}>
+                          <Pressable onPress={() => setShowStartDatePicker(false)}>
+                            <Text style={styles.datePickerCancel}>Cancel</Text>
+                          </Pressable>
+                          <Pressable onPress={() => setShowStartDatePicker(false)}>
+                            <Text style={styles.datePickerDone}>Done</Text>
+                          </Pressable>
+                        </View>
+                        <DateTimePicker
+                          value={startDate}
+                          mode="date"
+                          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                          onChange={(e, date) => {
+                            if (Platform.OS !== 'ios') {
+                              setShowStartDatePicker(false);
+                            }
+                            if (date) setStartDate(date);
+                          }}
+                        />
+                      </View>
+                    </View>
+                  </Modal>
+                )}
+              </>
+            )}
+          </View>
+        </>
       )}
 
         {/* Calendar Preview */}
@@ -558,6 +646,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({ initialTask, onSave, onCance
                   return date.toISOString();
                 }) : undefined,
                 alternateInterval: parseInt(alternateInterval) || 1,
+                startDate: scheduleType === 'alternateDays' ? startDate.getTime() : undefined,
                 createdAt: initialTask?.createdAt || Date.now(),
                 lastReminderTime: initialTask?.lastReminderTime,
               }}
@@ -597,6 +686,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: Colors.primary,
     marginBottom: 8,
+  },
+  helperText: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    marginBottom: 8,
+    marginTop: -4,
   },
   input: {
     borderWidth: 0,
