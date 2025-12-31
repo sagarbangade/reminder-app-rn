@@ -82,8 +82,9 @@ export default function TaskDetailScreen() {
           occ.setHours(isNaN(hh) ? 9 : hh, isNaN(mm) ? 0 : mm, 0, 0);
           if (occ >= now && occ <= end) {
             if (isAlternate) {
-              // check interval from createdAt
-              const diffDays = Math.floor((occ.getTime() - new Date(task.createdAt).setHours(0,0,0,0)) / (24*60*60*1000));
+              // Use startDate if available, otherwise fall back to createdAt
+              const baseDate = task.startDate || task.createdAt;
+              const diffDays = Math.floor((occ.getTime() - new Date(baseDate).setHours(0,0,0,0)) / (24*60*60*1000));
               if (diffDays % Math.max(1, task.alternateInterval || 1) !== 0) continue;
             }
             items.push({ date: occ, key: occ.toISOString(), label: occ.toLocaleString() });

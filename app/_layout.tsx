@@ -6,8 +6,9 @@ import { Animated, StyleSheet, Text, View } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { ErrorBoundary } from './_components/ErrorBoundary';
 import { TaskProvider } from './_context/TaskContext';
+import { useNotifications } from './_hooks/useNotifications';
 import { Colors, Radii } from './_styles/theme';
-import { registerNotificationCategories } from './_utils/notificationCategories';
+import { registerNotificationCategories, setupAndroidNotificationChannel } from './_utils/notificationCategories';
 
 const AnimatedView = Animated.View;
 
@@ -58,9 +59,21 @@ const toastConfig: any = {
 };
 
 export default function RootLayout() {
+  // Initialize notification permissions and handlers
+  useNotifications();
+
   // Register notification categories on app startup
   useEffect(() => {
     registerNotificationCategories();
+    
+    // Setup Android notification channel for proper notification delivery
+    setupAndroidNotificationChannel();
+    
+    // Reschedule all notifications on app launch to keep them fresh
+    // (handles 14-day horizon limit by rescheduling periodically)
+    import('./_utils/scheduleUtils').then(({ rescheduleAllTasks }) => {
+      rescheduleAllTasks();
+    });
   }, []);
 
   // Handle notification actions (Mark as Done, Snooze, etc.)

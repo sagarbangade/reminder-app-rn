@@ -42,3 +42,29 @@ export async function registerNotificationCategories(): Promise<void> {
     console.error('Error registering notification categories:', error);
   }
 }
+
+/**
+ * Setup Android notification channel for proper delivery on Android 8.0+
+ * This is REQUIRED for notifications to work on Android Oreo and above
+ */
+export async function setupAndroidNotificationChannel(): Promise<void> {
+  try {
+    // Only setup channel on Android
+    const { Platform } = await import('react-native');
+    if (Platform.OS !== 'android') return;
+
+    await Notifications.setNotificationChannelAsync('reminders', {
+      name: 'Reminders',
+      importance: Notifications.AndroidImportance.MAX,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: '#6366F1',
+      sound: 'default',
+      enableVibrate: true,
+      enableLights: true,
+    });
+    
+    console.log('Android notification channel created successfully');
+  } catch (error) {
+    console.error('Error setting up Android notification channel:', error);
+  }
+}

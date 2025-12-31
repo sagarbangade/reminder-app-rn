@@ -87,6 +87,7 @@ export async function scheduleTaskNotifications(task: Task): Promise<string[]> {
                     android: {
                       vibrate: [0, 250, 250, 250],
                       priority: 'high',
+                      channelId: 'reminders',
                     },
                   },
                   trigger: {
@@ -142,7 +143,7 @@ async function scheduleFollowupsForOccurrence(Notif: any, task: Task, occ: Date)
     const followupIds: string[] = [];
     const followupMinutes = 6 * 60; // 6 hours
     const step = 5; // every 5 minutes
-    for (let m = 0; m <= followupMinutes; m += step) {
+    for (let m = step; m <= followupMinutes; m += step) {
       const f = new Date(occ);
       f.setMinutes(f.getMinutes() + m);
       if (f <= new Date()) continue;
@@ -153,9 +154,16 @@ async function scheduleFollowupsForOccurrence(Notif: any, task: Task, occ: Date)
             body: task.details || `Time for ${task.title}`,
             sound: 'default',
             priority: 'high',
-            android: { vibrate: [0, 250, 250, 250], priority: 'high' },
+            android: { 
+              vibrate: [0, 250, 250, 250], 
+              priority: 'high',
+              channelId: 'reminders', // Use the Android channel we created
+            },
           },
-          trigger: f,
+          trigger: {
+            type: Notif.SchedulableTriggerInputTypes.DATE,
+            date: f,
+          },
         });
         followupIds.push(fid);
       } catch (e) {
@@ -219,6 +227,7 @@ async function scheduleDailyNotification(Notif: any, task: Task, time: string): 
       android: {
         vibrate: [0, 250, 250, 250],
         priority: 'high',
+        channelId: 'reminders', // Use the Android channel we created
       },
     },
     trigger: {
@@ -242,7 +251,9 @@ async function scheduleDailyNotification(Notif: any, task: Task, time: string): 
  */
 async function scheduleAlternateDaysForTimes(Notif: any, task: Task): Promise<string[]> {
   const notificationIds: string[] = [];
-  const horizonDays = 365; // schedule for next year
+  // Limit to 14 days to avoid hitting iOS 64 notification limit
+  // App will reschedule on next launch
+  const horizonDays = 14;
   const interval = Math.max(1, task.alternateInterval || 1);
 
   // Use startDate if available, otherwise fall back to createdAt
@@ -278,6 +289,7 @@ async function scheduleAlternateDaysForTimes(Notif: any, task: Task): Promise<st
             android: {
               vibrate: [0, 250, 250, 250],
               priority: 'high',
+              channelId: 'reminders',
             },
           },
           trigger: {
@@ -302,9 +314,16 @@ async function scheduleAlternateDaysForTimes(Notif: any, task: Task): Promise<st
                   body: task.details || `Time for ${task.title}`,
                   sound: 'default',
                   priority: 'high',
-                  android: { vibrate: [0, 250, 250, 250], priority: 'high' },
+                  android: { 
+                    vibrate: [0, 250, 250, 250], 
+                    priority: 'high',
+                    channelId: 'reminders',
+                  },
                 },
-                trigger: f,
+                trigger: {
+                  type: Notif.SchedulableTriggerInputTypes.DATE,
+                  date: f,
+                },
               });
               followupIds.push(fid);
             } catch (e) {
@@ -377,6 +396,47 @@ export async function getAllScheduledNotifications(): Promise<any[]> {
   } catch (error) {
     console.error('Error getting scheduled notifications:', error);
     return [];
+  }
+}
+
+/**
+ * Reschedule notifications for all tasks
+ * Call this on app launch to ensure notifications stay fresh
+ * (handles the 14-day horizon limit by rescheduling periodically)
+ */
+export async function rescheduleAllTasks(): Promise<void> {
+  try {
+    const { getAllTasks, getNotificationSchedule, saveNotificationSchedule } = await import('./storageUtils');
+    
+    const tasks = await getAllTasks();
+    console.log(`[Notifications] Rescheduling notifications for ${tasks.length} tasks`);
+    
+    for (const task of tasks) {
+      try {
+        // Get old notification IDs
+        const oldIds = await getNotificationSchedule(task.id);
+        
+        // Cancel old and schedule new
+        if (oldIds.length > 0) {
+          await cancelTaskNotifications(oldIds);
+        }
+        
+        // Schedule fresh notifications
+        const newIds = await scheduleTaskNotifications(task);
+        
+        // Save new notification IDs
+        await saveNotificationSchedule({
+          taskId: task.id,
+          notificationIds: newIds,
+        });
+      } catch (e) {
+        console.error(`Error rescheduling task ${task.id}:`, e);
+      }
+    }
+    
+    console.log('[Notifications] ✅ All tasks rescheduled');
+  } catch (error) {
+    console.error('Error rescheduling all tasks:', error);
   }
 }
 

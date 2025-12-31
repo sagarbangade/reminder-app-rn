@@ -92,6 +92,13 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   const addTask = useCallback(async (task: Task) => {
     try {
       await saveTaskToStorage(task);
+      
+      // Schedule notifications for the new task
+      const { scheduleTaskNotifications } = await import('../_utils/scheduleUtils');
+      const { saveNotificationSchedule } = await import('../_utils/storageUtils');
+      const notificationIds = await scheduleTaskNotifications(task);
+      await saveNotificationSchedule({ taskId: task.id, notificationIds });
+      
       dispatch({ type: 'ADD_TASK', payload: task });
     } catch {
       throw new Error('Failed to add task');
@@ -101,6 +108,15 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   const updateTask = useCallback(async (task: Task) => {
     try {
       await saveTaskToStorage(task);
+      
+      // Reschedule notifications for the updated task
+      const { rescheduleTaskNotifications } = await import('../_utils/scheduleUtils');
+      const { getNotificationSchedule, saveNotificationSchedule } = await import('../_utils/storageUtils');
+      
+      const oldIds = await getNotificationSchedule(task.id);
+      const newIds = await rescheduleTaskNotifications(task, oldIds);
+      await saveNotificationSchedule({ taskId: task.id, notificationIds: newIds });
+      
       dispatch({ type: 'UPDATE_TASK', payload: task });
     } catch {
       throw new Error('Failed to update task');

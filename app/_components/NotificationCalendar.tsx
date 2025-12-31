@@ -36,11 +36,24 @@ const generateMarkedDates = (task: Task): Record<string, any> => {
       marked[dateStr] = { dots };
     }
   } else if (task.scheduleType === 'alternateDays') {
-    // Mark every N days starting from today, showing dots for each configured time
+    // Mark every N days starting from startDate (or createdAt), showing dots for each configured time
     const interval = Math.max(1, task.alternateInterval || 1);
-    for (let i = 0; i < horizon; i += interval) {
-      const date = new Date(today);
-      date.setDate(date.getDate() + i);
+    
+    // Use startDate if available, otherwise fall back to createdAt or today
+    const baseDate = new Date(task.startDate || task.createdAt || Date.now());
+    baseDate.setHours(0, 0, 0, 0);
+    
+    // Calculate dates for the horizon, starting from baseDate
+    for (let offset = 0; offset <= horizon + 365; offset += interval) {
+      const date = new Date(baseDate);
+      date.setDate(baseDate.getDate() + offset);
+      
+      // Only show dates from today onwards up to horizon days in the future
+      if (date < today) continue;
+      
+      const daysFromToday = Math.floor((date.getTime() - today.getTime()) / (24 * 60 * 60 * 1000));
+      if (daysFromToday > horizon) break;
+      
       const dateStr = date.toISOString().split('T')[0];
       const dots = task.timesInDay.map((_, idx) => ({ key: `t${idx}`, color: getColorForIndex(idx) }));
       marked[dateStr] = { dots };

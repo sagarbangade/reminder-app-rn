@@ -30,6 +30,8 @@ export function useNotifications(onNotificationReceived?: (notification: Notific
         shouldSetBadge: true,
       }),
     });
+    
+    console.log('[useNotifications] Notification handler configured');
 
     // Listen for notifications when app is in foreground
     notificationListener.current = Notifications.addNotificationReceivedListener((notification) => {
@@ -79,10 +81,13 @@ export function useNotifications(onNotificationReceived?: (notification: Notific
 async function requestNotificationPermissions(): Promise<boolean> {
   try {
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    console.log('[Notifications] Current permission status:', existingStatus);
+    
     let finalStatus = existingStatus;
 
     // Only ask if permission hasn't been granted
     if (existingStatus !== 'granted') {
+      console.log('[Notifications] Requesting permissions...');
       const { status } = await Notifications.requestPermissionsAsync({
         ios: {
           allowAlert: true,
@@ -92,11 +97,18 @@ async function requestNotificationPermissions(): Promise<boolean> {
         } as any,
       });
       finalStatus = status;
+      console.log('[Notifications] Permission request result:', finalStatus);
+    }
+
+    if (finalStatus === 'granted') {
+      console.log('[Notifications] ✅ Notifications enabled');
+    } else {
+      console.warn('[Notifications] ⚠️ Notifications NOT granted');
     }
 
     return finalStatus === 'granted';
   } catch (error) {
-    console.error('Error requesting notification permissions:', error);
+    console.error('[Notifications] Error requesting permissions:', error);
     return false;
   }
 }
