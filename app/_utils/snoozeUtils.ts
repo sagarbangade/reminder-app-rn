@@ -29,7 +29,16 @@ export async function snoozeNotification(
         priority: 'high',
         vibrate: [0, 250, 250, 250],
         categoryIdentifier: TASK_REMINDER_CATEGORY,
-      },
+        data: {
+          taskId,
+          occurrenceKey: snoozeDate.toISOString(),
+        },
+        android: {
+          vibrate: [0, 250, 250, 250],
+          priority: 'high',
+          channelId: 'reminders',
+        },
+      } as Notifications.NotificationContentInput,
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DATE,
         date: snoozeDate,
