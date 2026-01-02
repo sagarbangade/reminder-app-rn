@@ -20,7 +20,7 @@ export async function snoozeNotification(
     const snoozeDate = new Date();
     snoozeDate.setMinutes(snoozeDate.getMinutes() + snoozeMinutes);
 
-    // Schedule a new notification
+    // Schedule the snoozed reminder
     await Notifications.scheduleNotificationAsync({
       content: {
         title: `Snoozed: ${taskTitle}`,
@@ -45,9 +45,35 @@ export async function snoozeNotification(
       },
     });
 
+    // Show instant confirmation notification (works even when app is in background)
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: '✓ Snoozed',
+        body: `Will remind you about "${taskTitle}" in ${snoozeMinutes} minutes`,
+        android: {
+          channelId: 'reminders',
+        },
+      } as Notifications.NotificationContentInput,
+      trigger: null, // Immediate
+    });
+
+    // Also show toast if app is in foreground
     showToast('success', `Snoozed for ${snoozeMinutes} minutes`);
   } catch (error) {
     console.error('Error snoozing notification:', error);
+    
+    // Show error notification (works in background)
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: '❌ Snooze Failed',
+        body: 'Could not snooze the reminder. Please try again.',
+        android: {
+          channelId: 'reminders',
+        },
+      } as Notifications.NotificationContentInput,
+      trigger: null,
+    }).catch(() => {}); // Ignore if this also fails
+    
     showToast('error', 'Failed to snooze notification');
   }
 }

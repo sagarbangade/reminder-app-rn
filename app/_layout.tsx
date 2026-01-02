@@ -89,9 +89,13 @@ export default function RootLayout() {
         // Handle Mark as Done action
         if (actionIdentifier === 'MARK_DONE' && taskId && occurrenceKey) {
           try {
-            const { acknowledgeOccurrence, getPersistentSchedule, deletePersistentSchedule } = await import('./_utils/storageUtils');
+            const { acknowledgeOccurrence, getPersistentSchedule, deletePersistentSchedule, getTaskById } = await import('./_utils/storageUtils');
             const { cancelTaskNotifications } = await import('./_utils/scheduleUtils');
             const { showToast } = await import('./_utils/toastUtils');
+
+            // Get task title for confirmation message
+            const task = await getTaskById(taskId);
+            const taskTitle = task?.title || 'Task';
 
             // Mark this specific occurrence as done
             await acknowledgeOccurrence(taskId, occurrenceKey);
@@ -102,6 +106,18 @@ export default function RootLayout() {
               await cancelTaskNotifications(ids);
               await deletePersistentSchedule(taskId, occurrenceKey);
             }
+
+            // Show instant confirmation notification (works in background)
+            await Notifications.scheduleNotificationAsync({
+              content: {
+                title: '✓ Done',
+                body: `"${taskTitle}" marked as complete`,
+                android: {
+                  channelId: 'reminders',
+                },
+              } as Notifications.NotificationContentInput,
+              trigger: null, // Immediate
+            });
 
             showToast('success', 'Task marked as done');
           } catch (error) {
