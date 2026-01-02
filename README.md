@@ -2,6 +2,14 @@
 
 A React Native mobile application built with Expo and TypeScript for scheduling and managing medicine reminders with local notifications.
 
+## 📥 Download
+
+[![Download APK](https://img.shields.io/badge/Download-APK-green?style=for-the-badge&logo=android)](https://github.com/sagarbangade/reminder-app-rn/releases/latest/download/AthvanNara.apk)
+
+**[⬇️ Download Latest APK](https://github.com/sagarbangade/reminder-app-rn/releases/latest/download/AthvanNara.apk)**
+
+> **Note:** This is an Android APK. Enable "Install from unknown sources" in your device settings to install.
+
 ## Features
 
 - ✅ **Create Medicine Reminders** - Add medication tasks with flexible scheduling
