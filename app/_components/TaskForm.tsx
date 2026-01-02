@@ -6,14 +6,14 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import React, { useEffect, useState } from 'react';
 import {
-    Modal,
-    Platform,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from 'react-native';
 import { Colors, Radii } from '../_styles/theme';
 import { ScheduleType, Task } from '../_types/Task';
@@ -150,8 +150,6 @@ export const TaskForm: React.FC<TaskFormProps> = ({ initialTask, onSave, onCance
   const [meridiems, setMeridiems] = useState<string[]>(['AM']);
   // For customTimes: optional per-entry selected dates
   const [customDates, setCustomDates] = useState<(Date | null)[]>([null]);
-  const [showDatePickerIndex, setShowDatePickerIndex] = useState<number | null>(null);
-  const [tempSelectedDate, setTempSelectedDate] = useState<Date | null>(null);
   const [alternateInterval, setAlternateInterval] = useState('2');
   // For alternateDays: start date for N-day calculation
   // Initialize to noon to avoid timezone issues
@@ -337,45 +335,6 @@ export const TaskForm: React.FC<TaskFormProps> = ({ initialTask, onSave, onCance
     setUiTimes(newUi);
   };
 
-  const onChangeDate = (event: any, selectedDate?: Date) => {
-    const idx = showDatePickerIndex;
-    
-    // On iOS, the picker fires onChange as the user scrolls
-    if (Platform.OS === 'ios') {
-      if (event.type === 'dismissed') {
-        setShowDatePickerIndex(null);
-        setTempSelectedDate(null);
-        return;
-      }
-      // Store the selected date temporarily
-      if (selectedDate) {
-        setTempSelectedDate(selectedDate);
-      }
-      return; // Don't close yet, wait for Done button
-    }
-    
-    // On Android, the picker closes automatically
-    setShowDatePickerIndex(null);
-    if (idx === null) return;
-    if (selectedDate) {
-      const newDates = [...customDates];
-      newDates[idx] = selectedDate;
-      setCustomDates(newDates);
-    }
-  };
-  
-  const confirmDateSelection = () => {
-    const idx = showDatePickerIndex;
-    if (idx === null) return;
-    
-    const dateToUse = tempSelectedDate || customDates[idx] || new Date();
-    const newDates = [...customDates];
-    newDates[idx] = dateToUse;
-    setCustomDates(newDates);
-    setShowDatePickerIndex(null);
-    setTempSelectedDate(null);
-  };
-
   const toggleMeridiem = (index: number) => {
     const newMer = [...meridiems];
     newMer[index] = newMer[index] === 'AM' ? 'PM' : 'AM';
@@ -405,6 +364,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({ initialTask, onSave, onCance
         <TextInput
           style={styles.input}
           placeholder="e.g., Morning walk, Take vitamins"
+          placeholderTextColor="#999"
           value={title}
           onChangeText={setTitle}
           editable={!isSaving}
@@ -417,6 +377,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({ initialTask, onSave, onCance
         <TextInput
           style={[styles.input, styles.multilineInput]}
           placeholder="e.g., Take with food, 500mg"
+          placeholderTextColor="#999"
           value={details}
           onChangeText={setDetails}
           multiline
@@ -502,6 +463,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({ initialTask, onSave, onCance
               <TextInput
                 style={styles.timeInput}
                 placeholder="HH:MM"
+                placeholderTextColor="#999"
                 value={uiTime}
                 onChangeText={(value) => updateTime(index, value)}
                 editable={!isSaving}
@@ -551,6 +513,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({ initialTask, onSave, onCance
             <TextInput
               style={styles.input}
               placeholder="e.g., 2 (for every 2 days)"
+              placeholderTextColor="#999"
               value={alternateInterval}
               onChangeText={setAlternateInterval}
               keyboardType="number-pad"

@@ -125,6 +125,17 @@ export function TaskProvider({ children }: { children: ReactNode }) {
 
   const deleteTask = useCallback(async (taskId: string) => {
     try {
+      // Cancel scheduled notifications before deleting
+      const { cancelTaskNotifications } = await import('../_utils/scheduleUtils');
+      const { getNotificationSchedule, deleteNotificationSchedule } = await import('../_utils/storageUtils');
+      
+      const notificationIds = await getNotificationSchedule(taskId);
+      if (notificationIds.length > 0) {
+        await cancelTaskNotifications(notificationIds);
+      }
+      await deleteNotificationSchedule(taskId);
+      
+      // Delete task from storage
       await deleteTaskFromStorage(taskId);
       dispatch({ type: 'DELETE_TASK', payload: taskId });
     } catch {
@@ -134,12 +145,17 @@ export function TaskProvider({ children }: { children: ReactNode }) {
 
   const fetchTaskById = useCallback(async (taskId: string): Promise<Task | null> => {
     try {
-      const tasks = await getAllTasks();
-      return tasks.find(t => t.id === taskId) || null;
+      // Check in-memory state first for better performance
+      const inMemory = state.tasks.find(t => t.id === taskId);
+      if (inMemory) return inMemory;
+      
+      // Fallback to storage if not in state
+      const { getTaskById } = await import('../_utils/storageUtils');
+      return await getTaskById(taskId);
     } catch {
       throw new Error('Failed to fetch task');
     }
-  }, []);
+  }, [state.tasks]);
 
   const value = {
     state,

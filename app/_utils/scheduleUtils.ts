@@ -148,16 +148,22 @@ async function scheduleFollowupsForOccurrence(Notif: any, task: Task, occ: Date)
       f.setMinutes(f.getMinutes() + m);
       if (f <= new Date()) continue;
       try {
+        const { TASK_REMINDER_CATEGORY } = await import('./notificationCategories');
         const fid = await Notif.scheduleNotificationAsync({
           content: {
             title: `Reminder: ${task.title}`,
             body: task.details || `Time for ${task.title}`,
             sound: 'default',
             priority: 'high',
+            categoryIdentifier: TASK_REMINDER_CATEGORY,
+            data: {
+              taskId: task.id,
+              occurrenceKey: occ.toISOString(),
+            },
             android: { 
               vibrate: [0, 250, 250, 250], 
               priority: 'high',
-              channelId: 'reminders', // Use the Android channel we created
+              channelId: 'reminders',
             },
           },
           trigger: {
@@ -314,6 +320,11 @@ async function scheduleAlternateDaysForTimes(Notif: any, task: Task): Promise<st
                   body: task.details || `Time for ${task.title}`,
                   sound: 'default',
                   priority: 'high',
+                  categoryIdentifier: TASK_REMINDER_CATEGORY,
+                  data: {
+                    taskId: task.id,
+                    occurrenceKey: occ.toISOString(),
+                  },
                   android: { 
                     vibrate: [0, 250, 250, 250], 
                     priority: 'high',

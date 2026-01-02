@@ -41,7 +41,15 @@ const generateMarkedDates = (task: Task): Record<string, any> => {
     
     // Use startDate if available, otherwise fall back to createdAt or today
     const baseDate = new Date(task.startDate || task.createdAt || Date.now());
-    baseDate.setHours(0, 0, 0, 0);
+    baseDate.setHours(12, 0, 0, 0); // Normalize to noon to avoid timezone issues
+    
+    // Helper to format date as YYYY-MM-DD in local timezone
+    const formatLocalDate = (d: Date) => {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
     
     // Calculate dates for the horizon, starting from baseDate
     for (let offset = 0; offset <= horizon + 365; offset += interval) {
@@ -54,7 +62,7 @@ const generateMarkedDates = (task: Task): Record<string, any> => {
       const daysFromToday = Math.floor((date.getTime() - today.getTime()) / (24 * 60 * 60 * 1000));
       if (daysFromToday > horizon) break;
       
-      const dateStr = date.toISOString().split('T')[0];
+      const dateStr = formatLocalDate(date);
       const dots = task.timesInDay.map((_, idx) => ({ key: `t${idx}`, color: getColorForIndex(idx) }));
       marked[dateStr] = { dots };
     }
