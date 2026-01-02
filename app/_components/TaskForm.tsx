@@ -154,7 +154,12 @@ export const TaskForm: React.FC<TaskFormProps> = ({ initialTask, onSave, onCance
   const [tempSelectedDate, setTempSelectedDate] = useState<Date | null>(null);
   const [alternateInterval, setAlternateInterval] = useState('2');
   // For alternateDays: start date for N-day calculation
-  const [startDate, setStartDate] = useState<Date>(new Date());
+  // Initialize to noon to avoid timezone issues
+  const [startDate, setStartDate] = useState<Date>(() => {
+    const d = new Date();
+    d.setHours(12, 0, 0, 0);
+    return d;
+  });
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showSchedulePicker, setShowSchedulePicker] = useState(false);
@@ -197,7 +202,10 @@ export const TaskForm: React.FC<TaskFormProps> = ({ initialTask, onSave, onCance
       setAlternateInterval(initialTask.alternateInterval.toString());
       // Load startDate if present, otherwise use createdAt or current date
       if (initialTask.startDate) {
-        setStartDate(new Date(initialTask.startDate));
+        // Normalize to noon to avoid timezone issues
+        const d = new Date(initialTask.startDate);
+        d.setHours(12, 0, 0, 0);
+        setStartDate(d);
       } else if (initialTask.createdAt) {
         setStartDate(new Date(initialTask.createdAt));
       }
@@ -560,7 +568,9 @@ export const TaskForm: React.FC<TaskFormProps> = ({ initialTask, onSave, onCance
                   onChange={(e: any) => {
                     if (e.target.value) {
                       const [year, month, day] = e.target.value.split('-');
-                      setStartDate(new Date(parseInt(year), parseInt(month) - 1, parseInt(day)));
+                      // Normalize to noon to avoid timezone issues
+                      const normalized = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), 12, 0, 0, 0);
+                      setStartDate(normalized);
                     }
                   }}
                   disabled={isSaving}
@@ -615,7 +625,12 @@ export const TaskForm: React.FC<TaskFormProps> = ({ initialTask, onSave, onCance
                             if (Platform.OS !== 'ios') {
                               setShowStartDatePicker(false);
                             }
-                            if (date) setStartDate(date);
+                            if (date) {
+                              // Normalize to noon local time to avoid timezone issues
+                              const normalized = new Date(date);
+                              normalized.setHours(12, 0, 0, 0);
+                              setStartDate(normalized);
+                            }
                           }}
                         />
                       </View>

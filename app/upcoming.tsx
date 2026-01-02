@@ -23,23 +23,32 @@ export default function UpcomingScreen() {
     label: string;
     acknowledged: boolean;
   }[]>([]);
+  
+  // Active reminders = past reminders (within 6h) that haven't been acknowledged
+  const [activeReminders, setActiveReminders] = useState<{
+    task: Task;
+    date: Date;
+    key: string;
+    label: string;
+    acknowledged: boolean;
+  }[]>([]);
 
   const loadUpcoming = useCallback(async () => {
     const now = new Date();
     const end = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    // Look back 6 hours for active (missed) reminders
+    const sixHoursAgo = new Date(now.getTime() - 6 * 60 * 60 * 1000);
     const tasks = await getAllTasks();
-    const occs: {
-      task: Task;
-      date: Date;
-      key: string;
-      label: string;
-      acknowledged: boolean;
-    }[] = [];
+    
+    const upcomingOccs: typeof occurrences = [];
+    const activeOccs: typeof occurrences = [];
+    
     for (const task of tasks) {
       // daily/alternateDays
       if (task.scheduleType === 'daily' || task.scheduleType === 'alternateDays') {
-        const daysToCheck = 2;
-        for (let d = 0; d < daysToCheck; d++) {
+        // Check today and yesterday for missed reminders, plus tomorrow for upcoming
+        const daysToCheck = 3;
+        for (let d = -1; d < daysToCheck; d++) {
           const base = new Date();
           base.setDate(base.getDate() + d);
           base.setHours(0, 0, 0, 0);
@@ -48,16 +57,23 @@ export default function UpcomingScreen() {
             const [hh, mm] = time.split(':').map((v) => parseInt(v, 10));
             const occ = new Date(base);
             occ.setHours(isNaN(hh) ? 9 : hh, isNaN(mm) ? 0 : mm, 0, 0);
+            
+            if (isAlternate) {
+              const baseDate = task.startDate || task.createdAt;
+              const diffDays = Math.floor((occ.getTime() - new Date(baseDate).setHours(0,0,0,0)) / (24*60*60*1000));
+              if (diffDays % Math.max(1, task.alternateInterval || 1) !== 0) continue;
+            }
+            
+            const key = occ.toISOString();
+            const acknowledged = await isOccurrenceAcknowledged(task.id, key);
+            
+            // Future occurrence (upcoming)
             if (occ >= now && occ <= end) {
-              if (isAlternate) {
-                // Use startDate if available, otherwise fall back to createdAt
-                const baseDate = task.startDate || task.createdAt;
-                const diffDays = Math.floor((occ.getTime() - new Date(baseDate).setHours(0,0,0,0)) / (24*60*60*1000));
-                if (diffDays % Math.max(1, task.alternateInterval || 1) !== 0) continue;
-              }
-              const key = occ.toISOString();
-              const acknowledged = await isOccurrenceAcknowledged(task.id, key);
-              occs.push({ task, date: occ, key, label: occ.toLocaleString(), acknowledged });
+              upcomingOccs.push({ task, date: occ, key, label: occ.toLocaleString(), acknowledged });
+            }
+            // Past occurrence within 6 hours and NOT acknowledged (active/missed)
+            else if (occ < now && occ >= sixHoursAgo && !acknowledged) {
+              activeOccs.push({ task, date: occ, key, label: occ.toLocaleString(), acknowledged });
             }
           }
         }
@@ -68,10 +84,13 @@ export default function UpcomingScreen() {
           for (const dt of task.customDateTimes) {
             try {
               const d = new Date(dt);
+              const key = d.toISOString();
+              const acknowledged = await isOccurrenceAcknowledged(task.id, key);
+              
               if (d >= now && d <= end) {
-                const key = d.toISOString();
-                const acknowledged = await isOccurrenceAcknowledged(task.id, key);
-                occs.push({ task, date: d, key, label: d.toLocaleString(), acknowledged });
+                upcomingOccs.push({ task, date: d, key, label: d.toLocaleString(), acknowledged });
+              } else if (d < now && d >= sixHoursAgo && !acknowledged) {
+                activeOccs.push({ task, date: d, key, label: d.toLocaleString(), acknowledged });
               }
             } catch {}
           }
@@ -80,17 +99,24 @@ export default function UpcomingScreen() {
             const [hh, mm] = time.split(':').map((v) => parseInt(v, 10));
             const occ = new Date();
             occ.setHours(isNaN(hh) ? 9 : hh, isNaN(mm) ? 0 : mm, 0, 0);
+            const key = occ.toISOString();
+            const acknowledged = await isOccurrenceAcknowledged(task.id, key);
+            
             if (occ >= now && occ <= end) {
-              const key = occ.toISOString();
-              const acknowledged = await isOccurrenceAcknowledged(task.id, key);
-              occs.push({ task, date: occ, key, label: occ.toLocaleString(), acknowledged });
+              upcomingOccs.push({ task, date: occ, key, label: occ.toLocaleString(), acknowledged });
+            } else if (occ < now && occ >= sixHoursAgo && !acknowledged) {
+              activeOccs.push({ task, date: occ, key, label: occ.toLocaleString(), acknowledged });
             }
           }
         }
       }
     }
-    occs.sort((a, b) => a.date.getTime() - b.date.getTime());
-    setOccurrences(occs);
+    
+    upcomingOccs.sort((a, b) => a.date.getTime() - b.date.getTime());
+    activeOccs.sort((a, b) => b.date.getTime() - a.date.getTime()); // Most recent first
+    
+    setOccurrences(upcomingOccs);
+    setActiveReminders(activeOccs);
   }, []);
 
   useEffect(() => {
@@ -148,30 +174,62 @@ export default function UpcomingScreen() {
           </Pressable>
         </View>
 
-        {Object.keys(grouped).length === 0 ? (
-          <Text style={styles.empty}>No reminders due in the next 24 hours.</Text>
-        ) : (
-          Object.values(grouped).map((occs) => {
-            const filtered = showOnlyUnacked ? occs.filter(o => !o.acknowledged) : occs;
-            if (filtered.length === 0) return null;
-            return (
-              <View key={occs[0].task.id} style={styles.taskSection}>
-                <Text style={styles.taskTitle}>{occs[0].task.title}</Text>
-                {filtered.map((occ) => (
-                  <View key={occ.key} style={styles.occRow}>
-                    <Text style={styles.occLabel}>{occ.label}</Text>
-                    <Pressable onPress={() => handleToggleAck(occ.task, occ.key, occ.acknowledged)} style={styles.ackButton}>
-                      {occ.acknowledged ? (
-                        <MaterialCommunityIcons name="check-circle" size={28} color={Colors.success} />
-                      ) : (
-                        <MaterialCommunityIcons name="checkbox-blank-circle-outline" size={28} color={Colors.textMuted} />
-                      )}
-                    </Pressable>
-                  </View>
-                ))}
+        {/* Active/Missed Reminders Section */}
+        {activeReminders.length > 0 && (
+          <View style={styles.activeSection}>
+            <View style={styles.activeSectionHeader}>
+              <MaterialCommunityIcons name="bell-ring" size={20} color={Colors.warning} />
+              <Text style={styles.activeSectionTitle}>Active Reminders</Text>
+              <Text style={styles.activeSectionSubtitle}>
+                ({activeReminders.length} - tap to stop notifications)
+              </Text>
+            </View>
+            {activeReminders.map((occ) => (
+              <View key={occ.key} style={styles.activeOccRow}>
+                <View style={styles.activeOccInfo}>
+                  <Text style={styles.activeTaskTitle}>{occ.task.title}</Text>
+                  <Text style={styles.activeOccTime}>{occ.label}</Text>
+                </View>
+                <Pressable 
+                  onPress={() => handleToggleAck(occ.task, occ.key, false)} 
+                  style={styles.stopButton}
+                >
+                  <MaterialCommunityIcons name="check" size={20} color="#fff" />
+                  <Text style={styles.stopButtonText}>Done</Text>
+                </Pressable>
               </View>
-            );
-          })
+            ))}
+          </View>
+        )}
+
+        {/* Upcoming Reminders Section */}
+        {Object.keys(grouped).length === 0 && activeReminders.length === 0 ? (
+          <Text style={styles.empty}>No reminders due in the next 24 hours.</Text>
+        ) : Object.keys(grouped).length > 0 && (
+          <>
+            <Text style={styles.sectionHeader}>Upcoming (Next 24h)</Text>
+            {Object.values(grouped).map((occs) => {
+              const filtered = showOnlyUnacked ? occs.filter(o => !o.acknowledged) : occs;
+              if (filtered.length === 0) return null;
+              return (
+                <View key={occs[0].task.id} style={styles.taskSection}>
+                  <Text style={styles.taskTitle}>{occs[0].task.title}</Text>
+                  {filtered.map((occ) => (
+                    <View key={occ.key} style={styles.occRow}>
+                      <Text style={styles.occLabel}>{occ.label}</Text>
+                      <Pressable onPress={() => handleToggleAck(occ.task, occ.key, occ.acknowledged)} style={styles.ackButton}>
+                        {occ.acknowledged ? (
+                          <MaterialCommunityIcons name="check-circle" size={28} color={Colors.success} />
+                        ) : (
+                          <MaterialCommunityIcons name="checkbox-blank-circle-outline" size={28} color={Colors.textMuted} />
+                        )}
+                      </Pressable>
+                    </View>
+                  ))}
+                </View>
+              );
+            })}
+          </>
         )}
       </ScrollView>
       <BottomTabs />
@@ -271,5 +329,70 @@ const styles = StyleSheet.create({
   filterTextActive: {
     color: Colors.primary,
   },
-  
+  // Active reminders section styles
+  activeSection: {
+    backgroundColor: '#FFF5E6',
+    borderRadius: Radii.md,
+    padding: 14,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#FFD699',
+  },
+  activeSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  activeSectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#CC7A00',
+  },
+  activeSectionSubtitle: {
+    fontSize: 12,
+    color: '#996600',
+  },
+  activeOccRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#FFE6B3',
+  },
+  activeOccInfo: {
+    flex: 1,
+  },
+  activeTaskTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#663D00',
+  },
+  activeOccTime: {
+    fontSize: 13,
+    color: '#996600',
+    marginTop: 2,
+  },
+  stopButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.success,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: Radii.md,
+    gap: 4,
+  },
+  stopButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  sectionHeader: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.textMuted,
+    marginBottom: 12,
+    marginTop: 8,
+  },
 });
