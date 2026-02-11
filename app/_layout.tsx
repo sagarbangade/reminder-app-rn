@@ -90,7 +90,7 @@ export default function RootLayout() {
         if (actionIdentifier === 'MARK_DONE' && taskId && occurrenceKey) {
           try {
             const { acknowledgeOccurrence, getPersistentSchedule, deletePersistentSchedule, getTaskById } = await import('./_utils/storageUtils');
-            const { cancelTaskNotifications } = await import('./_utils/scheduleUtils');
+            const { cancelScheduledOccurrenceNotifications, cancelTaskNotifications } = await import('./_utils/scheduleUtils');
             const { showToast } = await import('./_utils/toastUtils');
 
             // Get task title for confirmation message
@@ -106,6 +106,10 @@ export default function RootLayout() {
               await cancelTaskNotifications(ids);
               await deletePersistentSchedule(taskId, occurrenceKey);
             }
+
+            // Also cancel any one-off scheduled notifications for this exact occurrence
+            // so mark-done from notification center fully silences it.
+            await cancelScheduledOccurrenceNotifications(taskId, occurrenceKey);
 
             // Show instant confirmation notification (works in background)
             await Notifications.scheduleNotificationAsync({

@@ -9,7 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomTabs } from './_components/BottomTabs';
 import { Colors, Radii, Shadows } from './_styles/theme';
 import { Task } from './_types/Task';
-import { cancelTaskNotifications, schedulePersistentFollowupsForOccurrence } from './_utils/scheduleUtils';
+import { cancelScheduledOccurrenceNotifications, cancelTaskNotifications, schedulePersistentFollowupsForOccurrence } from './_utils/scheduleUtils';
 import { acknowledgeOccurrence, deletePersistentSchedule, getAllTasks, getPersistentSchedule, isOccurrenceAcknowledged, unacknowledgeOccurrence } from './_utils/storageUtils';
 import { showErrorToast, showToast } from './_utils/toastUtils';
 
@@ -138,6 +138,11 @@ export default function UpcomingScreen() {
           await cancelTaskNotifications(ids);
           await deletePersistentSchedule(task.id, occKey);
         }
+
+        // Also cancel any one-off scheduled notifications bound to this occurrence
+        // so tapping Done in Upcoming truly stops further alerts for it.
+        await cancelScheduledOccurrenceNotifications(task.id, occKey);
+
         await acknowledgeOccurrence(task.id, occKey);
         try { await Haptics.selectionAsync(); } catch {}
         showToast('success', 'Reminder acknowledged');

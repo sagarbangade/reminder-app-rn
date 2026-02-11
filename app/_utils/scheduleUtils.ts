@@ -265,18 +265,27 @@ async function scheduleAlternateDaysForTimes(Notif: any, task: Task): Promise<st
   // Use startDate if available, otherwise fall back to createdAt
   const baseDate = new Date(task.startDate || task.createdAt);
   const now = new Date();
+  const todayStart = new Date(now);
+  todayStart.setHours(0, 0, 0, 0);
+  const baseStart = new Date(baseDate);
+  baseStart.setHours(0, 0, 0, 0);
+  const msPerDay = 24 * 60 * 60 * 1000;
 
-  // For each time of day, generate occurrences starting from createdDate
-  for (const time of task.timesInDay) {
-    const [hh, mm] = time.split(':').map((v) => parseInt(v, 10));
+  // For each time of day, generate all *future* occurrences in the upcoming horizon.
+  // This avoids missing schedules when the original start date is older than horizonDays.
+  for (let dayOffset = 0; dayOffset <= horizonDays; dayOffset++) {
+    const day = new Date(todayStart);
+    day.setDate(todayStart.getDate() + dayOffset);
 
-    // iterate over occurrences spaced by `interval` days
-    for (let offset = 0; offset <= horizonDays; offset += interval) {
-      const occ = new Date(baseDate);
-      occ.setDate(baseDate.getDate() + offset);
+    const diffDays = Math.floor((day.getTime() - baseStart.getTime()) / msPerDay);
+    if (diffDays < 0 || diffDays % interval !== 0) continue;
+
+    for (const time of task.timesInDay) {
+      const [hh, mm] = time.split(':').map((v) => parseInt(v, 10));
+      const occ = new Date(day);
       occ.setHours(isNaN(hh) ? 9 : hh, isNaN(mm) ? 0 : mm, 0, 0);
 
-      if (occ <= now) continue; // skip past occurrences
+      if (occ <= now) continue;
 
       try {
         const { TASK_REMINDER_CATEGORY } = await import('./notificationCategories');
@@ -355,6 +364,39 @@ async function scheduleAlternateDaysForTimes(Notif: any, task: Task): Promise<st
   }
 
   return notificationIds;
+}
+
+
+export async function cancelScheduledOccurrenceNotifications(taskId: string, occurrenceKey: string): Promise<number> {
+  const Notif = await getNotifications();
+  if (!Notif) return 0;
+
+  try {
+    const scheduled = await Notif.getAllScheduledNotificationsAsync();
+    let canceled = 0;
+
+    for (const item of scheduled) {
+      const data = item?.content?.data as { taskId?: string; occurrenceKey?: string } | undefined;
+      if (!data || data.taskId !== taskId || data.occurrenceKey !== occurrenceKey) continue;
+
+      // Only cancel one-off DATE schedules.
+      // Repeating DAILY schedules represent the whole series and should not be canceled
+      // when acknowledging a single occurrence.
+      if (item?.trigger?.type !== Notif.SchedulableTriggerInputTypes.DATE) continue;
+
+      try {
+        await Notif.cancelScheduledNotificationAsync(item.identifier);
+        canceled++;
+      } catch (error) {
+        console.error(`Error canceling occurrence notification ${item.identifier}:`, error);
+      }
+    }
+
+    return canceled;
+  } catch (error) {
+    console.error('Error canceling occurrence notifications:', error);
+    return 0;
+  }
 }
 
 /**
